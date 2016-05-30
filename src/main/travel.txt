@@ -1,0 +1,284 @@
+[0]: ????
+  To get to [0] say:Verb-0/
+[1]: You're at end of road again.
+  To get to [2] say:hill/w/ascen/enter/house/in/e/downs/gully/strea/s/desce/fores/n/e/depre/
+[2]: You're at hill in road.
+  To get to [1] say:hill/house/onwar/e/n/desce/fores/n/s/
+[3]: You're inside building.
+  To get to [1] say:enter/leave/outdo/w/xyzzy/plugh/downs/strea/
+[4]: You're in valley.
+  To get to [1] say:upstr/house/n/fores/e/w/ascen/downs/s/desce/depre/
+[5]: You're in forest.
+  To get to [4] say:valle/e/desce/fores/onwar/n/fores/w/s/
+[6]: You're in forest.
+  To get to [1] say:hill/n/valle/e/w/desce/fores/s/
+[7]: You're at slit in streambed.
+  To get to [1] say:house/upstr/n/fores/e/w/downs/rock/bed/s/slit/strea/desce/
+[8]: You're outside grate.
+  To get to [5] say:fores/e/w/s/house/upstr/gully/n/enter/in/desce/enter/
+[9]: You're below the grate.
+  To get to [8] with cond(303) say:leave/ascen/leave/crawl/cobbl/in/w/pit/debri/
+[10]: You're in Cobble Crawl.
+  To get to [9] say:leave/surfa/nowhe/e/in/dark/w/debri/pit/
+[11]: You're in Debris Room.
+  To get to [8] with cond(303) say:depre/entra/crawl/cobbl/tunne/low/e/canyo/in/ascen/w/xyzzy/pit/
+[12]: You are in an awkward sloping east/west canyon.
+  To get to [8] with cond(303) say:depre/entra/desce/e/debri/in/ascen/w/pit/
+[13]: You're in Bird Chamber.
+  To get to [8] with cond(303) say:depre/entra/debri/canyo/e/tunne/pit/w/
+[14]: You're at top of small pit.
+  To get to [8] with cond(303) say:depre/entra/debri/tunne/e/desce/pit/steps/desce/crack/w/
+[15]: You're in Hall of Mists.
+  To get to [18] say:left/s/onwar/hall/w/stair/desce/n/ascen/pit/steps/dome/tunne/e/ascen/y2/
+[16]: The crack is far too small for you to follow.
+  To get to [14] say:Verb-1/
+[17]: You're on east bank of fissure.
+  To get to [15] say:hall/e/jump/onwar/over/acros/w/cross/over/
+[18]: You're in Nugget of Gold Room.
+  To get to [15] say:hall/leave/n/
+[19]: You're in Hall of Mt King.
+  To get to [15] say:stair/ascen/e/n/left/s/right/w/onwar/n/sw/sw/secre/
+[20]: You are at the bottom of the pit with a broken neck.
+  To get to [0] say:Verb-1/
+[21]: You didn't make it.
+  To get to [0] say:Verb-1/
+[22]: The dome is unclimbable.
+  To get to [15] say:Verb-1/
+[23]: You're at west end of Twopit Room.
+  To get to [67] say:e/acros/w/slabr/desce/pit/hole/
+[24]: You're in east pit.
+  To get to [67] say:ascen/leave/
+[25]: You're in west pit.
+  To get to [23] say:ascen/leave/climb/climb/
+[26]: You clamber up the plant and scurry through the hole at the top.
+  To get to [88] say:Verb-1/
+[27]: You are on the west side of the fissure in the Hall of Mists.
+  To get to [596] with cond(312) say:jump/onwar/over/acros/e/cross/over/n/w/
+[28]: You are in a low N/S passage at a hole in the floor.  The hole goes
+  To get to [19] say:hall/leave/s/n/y2/desce/hole/
+[29]: You are in the south side chamber.
+  To get to [19] say:hall/leave/n/
+[30]: You are in the west side chamber of the Hall of the Mountain King.
+  To get to [19] say:hall/leave/e/w/ascen/
+[31]: >$<
+  To get to [89] with cond(524) say:Verb-1/Verb-1/
+[32]: You can't get by the snake.
+  To get to [19] say:Verb-1/
+[33]: You're at "Y2".
+  To get to [3] say:plugh/s/e/wall/broke/w/plove/plove/
+[34]: You are in a jumble of rock, with cracks everywhere.
+  To get to [33] say:desce/y2/ascen/
+[35]: You're at window on pit.
+  To get to [33] say:e/y2/jump/
+[36]: You're in dirty passage.
+  To get to [37] say:e/crawl/ascen/hole/w/bedqu/
+[37]: You are on the brink of a small clean climbable pit.  A crawl leads
+  To get to [36] say:w/crawl/desce/pit/climb/
+[38]: You are in the bottom of a small pit with a little stream, which
+  To get to [37] say:climb/ascen/leave/slit/strea/desce/upstr/downs/
+[39]: You're in Dusty Rock room.
+  To get to [36] say:e/tunne/desce/hole/floor/bedqu/
+[40]: You have crawled through a very low wide passage parallel to and north
+  To get to [41] say:Verb-1/
+[41]: You're at west end of Hall of Mists.
+  To get to [42] say:s/ascen/tunne/climb/e/n/w/crawl/
+[42]: You are in a maze of twisty little passages, all alike.
+  To get to [41] say:ascen/n/e/s/w/
+[43]: You are in a maze of twisty little passages, all alike.
+  To get to [42] say:w/s/e/
+[44]: You are in a maze of twisty little passages, all alike.
+  To get to [43] say:e/desce/s/n/
+[45]: You are in a maze of twisty little passages, all alike.
+  To get to [42] say:w/n/e/s/ascen/desce/
+[46]: Dead end
+  To get to [45] say:w/leave/
+[47]: Dead end
+  To get to [45] say:e/leave/
+[48]: Dead end
+  To get to [44] say:ascen/leave/
+[49]: You are in a maze of twisty little passages, all alike.
+  To get to [50] say:e/w/
+[50]: You are in a maze of twisty little passages, all alike.
+  To get to [44] say:e/w/desce/s/
+[51]: You are in a maze of twisty little passages, all alike.
+  To get to [49] say:w/ascen/e/s/
+[52]: You are in a maze of twisty little passages, all alike.
+  To get to [50] say:w/e/s/ascen/n/desce/
+[53]: You are in a maze of twisty little passages, all alike.
+  To get to [51] say:w/n/s/
+[54]: Dead end
+  To get to [53] say:w/leave/
+[55]: You are in a maze of twisty little passages, all alike.
+  To get to [52] say:w/n/desce/e/
+[56]: Dead end
+  To get to [55] say:ascen/leave/
+[57]: You're at brink of pit.
+  To get to [13] say:desce/climb/w/s/n/e/
+[58]: Dead end
+  To get to [57] say:e/leave/
+[59]: You have crawled through a very low wide passage parallel to and north
+  To get to [27] say:Verb-1/
+[60]: You're at east end of Long Hall.
+  To get to [41] say:e/ascen/crawl/w/n/desce/hole/
+[61]: You're at west end of Long Hall.
+  To get to [60] say:e/n/s/
+[62]: You are at a crossover of a high N/S passage and a low E/W one.
+  To get to [60] say:w/n/e/s/
+[63]: Dead end
+  To get to [62] say:s/leave/
+[64]: You're at Complex Junction.
+  To get to [39] say:ascen/climb/room/w/bedqu/n/shell/e/
+[65]: You are in Bedquilt, a long east/west passage with holes everywhere.
+  To get to [64] say:e/w/s/slabr/ascen/ascen/ascen/n/n/n/desce/desce/
+[66]: You're in Swiss Cheese room.
+  To get to [65] say:ne/w/s/canyo/e/nw/orien/
+[67]: You're at east end of Twopit Room.
+  To get to [66] say:e/w/acros/desce/pit/
+[68]: You're in Slab Room.
+  To get to [23] say:s/ascen/climb/n/
+[69]: You are in a secret N/S canyon above a large room.
+  To get to [68] say:desce/slabr/s/s/n/reser/
+[70]: You are in a secret N/S canyon above a sizable passage.
+  To get to [71] say:n/desce/tunne/s/
+[71]: You're at junction of three secret canyons.
+  To get to [65] say:se/s/n/
+[72]: You are in a large low room.  Crawls lead north, SE, and SW.
+  To get to [65] say:bedqu/sw/n/se/orien/
+[73]: Dead end crawl.
+  To get to [72] say:s/crawl/leave/
+[74]: You're in secret E/W canyon above tight canyon.
+  To get to [19] say:e/w/w/desce/
+[75]: You are at a wide place in a very tight N/S canyon.
+  To get to [76] say:s/n/
+[76]: The canyon here becomes too tight to go further south.
+  To get to [75] say:n/
+[77]: You are in a tall E/W canyon.  A low tight crawl goes 3 feet north and
+  To get to [75] say:e/w/n/crawl/
+[78]: The canyon runs into a mass of boulders -- dead end.
+  To get to [77] say:s/
+[79]: The stream flows out through a pair of 1 foot diameter sewer pipes.
+  To get to [3] say:Verb-1/
+[80]: You are in a maze of twisty little passages, all alike.
+  To get to [42] say:n/w/s/e/
+[81]: Dead end
+  To get to [80] say:w/leave/
+[82]: Dead end
+  To get to [44] say:s/leave/
+[83]: You are in a maze of twisty little passages, all alike.
+  To get to [57] say:s/e/w/
+[84]: You are in a maze of twisty little passages, all alike.
+  To get to [57] say:n/w/nw/
+[85]: Dead end
+  To get to [83] say:e/leave/
+[86]: Dead end
+  To get to [52] say:ascen/leave/
+[87]: You are in a maze of twisty little passages, all alike.
+  To get to [45] say:ascen/desce/
+[88]: You're in narrow corridor.
+  To get to [25] say:desce/climb/e/jump/w/giant/
+[89]: There is nothing here to climb.  Use "up" or "out" to leave the pit.
+  To get to [25] say:Verb-1/
+[90]: You have climbed up the plant and out of the pit.
+  To get to [23] say:Verb-1/
+[91]: You're at steep incline above large room.
+  To get to [95] say:n/caver/tunne/desce/climb/
+[92]: You're in Giant Room.
+  To get to [88] say:s/e/n/
+[93]: The passage here is blocked by a recent cave-in.
+  To get to [92] say:s/giant/leave/
+[94]: You are at one end of an immense north/south passage.
+  To get to [92] say:s/giant/tunne/n/enter/caver/n/
+[95]: You're in cavern with waterfall.
+  To get to [94] say:s/leave/giant/w/
+[96]: You're in Soft Room.
+  To get to [66] say:w/leave/
+[97]: You're in Oriental Room.
+  To get to [66] say:se/w/crawl/ascen/n/caver/
+[98]: You're in Misty Cavern.
+  To get to [97] say:s/orien/w/
+[99]: You're in Alcove.
+  To get to [98] say:nw/caver/e/tunne/e/
+[100]: You're in Plover Room.
+  To get to [301] say:w/tunne/leave/w/plove/plove/ne/dark/
+[101]: You're in Dark-Room.
+  To get to [100] say:s/plove/leave/
+[102]: You're in Arched Hall.
+  To get to [103] say:desce/shell/leave/
+[103]: You're in Shell Room.
+  To get to [102] say:ascen/hall/desce/s/s/s/
+[104]: You are in a long sloping corridor with ragged sharp walls.
+  To get to [103] say:ascen/shell/desce/
+[105]: You are in a cul-de-sac about eight feet across.
+  To get to [104] say:ascen/leave/shell/
+[106]: You're in Anteroom.
+  To get to [64] say:ascen/w/e/
+[107]: You are in a maze of twisty little passages, all different.
+  To get to [131] say:s/sw/ne/se/ascen/nw/e/w/n/desce/
+[108]: You're at Witt's End.
+  To get to [556] with cond(95) say:e/n/s/ne/se/sw/nw/ascen/desce/e/w/
+[109]: You're in Mirror Canyon.
+  To get to [69] say:s/n/reser/
+[110]: You're at window on pit.
+  To get to [71] say:w/jump/
+[111]: You're at top of stalactite.
+  To get to [70] say:n/desce/jump/climb/desce/desce/
+[112]: You are in a little maze of twisting passages, all different.
+  To get to [131] say:sw/n/e/nw/se/ne/w/desce/ascen/s/
+[113]: You're at Reservoir.
+  To get to [109] say:s/leave/verb[109]/
+[114]: Dead end
+  To get to [84] say:se/
+[115]: You're at NE end.
+  To get to [116] say:sw/
+[116]: You're at SW end.
+  To get to [115] say:ne/desce/
+[117]: You're on SW side of chasm.
+  To get to [118] say:sw/over/acros/cross/ne/over/over/jump/jump/
+[118]: You're in sloping corridor.
+  To get to [72] say:desce/ascen/
+[119]: You are in a secret canyon which exits to the north and east.
+  To get to [69] say:n/leave/e/onwar/
+[120]: You are in a secret canyon which exits to the north and east.
+  To get to [69] say:n/e/
+[121]: You are in a secret canyon which exits to the north and east.
+  To get to [74] say:e/leave/n/onwar/
+[122]: You're on NE side of chasm.
+  To get to [123] say:ne/over/acros/cross/sw/over/jump/fork/view/barre/
+[123]: You're in corridor.
+  To get to [122] say:w/e/fork/view/barre/
+[124]: You're at fork in path.
+  To get to [123] say:w/ne/left/se/right/desce/view/barre/
+[125]: You're at junction with warm walls.
+  To get to [124] say:s/fork/n/view/e/crawl/
+[126]: You're at Breath-taking View.
+  To get to [125] say:s/tunne/leave/fork/desce/jump/
+[127]: You're in Chamber of Boulders.
+  To get to [125] say:w/leave/crawl/fork/view/
+[128]: You're in limestone passage.
+  To get to [124] say:n/ascen/fork/s/desce/barre/view/
+[129]: You're in front of barren room.
+  To get to [128] say:w/ascen/fork/e/in/barre/enter/view/
+[130]: You're in Barren Room.
+  To get to [129] say:w/leave/fork/view/
+[131]: You are in a maze of twisting little passages, all different.
+  To get to [107] say:w/se/nw/sw/ne/ascen/desce/n/s/e/
+[132]: You are in a little maze of twisty passages, all different.
+  To get to [107] say:nw/ascen/n/s/w/sw/ne/e/desce/se/
+[133]: You are in a twisting maze of little passages, all different.
+  To get to [107] say:ascen/desce/w/ne/sw/e/n/nw/se/s/
+[134]: You are in a twisting little maze of passages, all different.
+  To get to [107] say:ne/n/nw/se/e/desce/s/ascen/w/sw/
+[135]: You are in a twisty little maze of passages, all different.
+  To get to [107] say:n/se/desce/s/e/w/sw/ne/nw/ascen/
+[136]: You are in a twisty maze of little passages, all different.
+  To get to [107] say:e/w/ascen/sw/desce/s/nw/se/ne/n/
+[137]: You are in a little twisty maze of passages, all different.
+  To get to [107] say:se/ne/s/desce/ascen/nw/n/sw/e/w/
+[138]: You are in a maze of little twisting passages, all different.
+  To get to [107] say:desce/e/ne/ascen/w/n/s/se/sw/nw/
+[139]: You are in a maze of little twisty passages, all different.
+  To get to [107] say:sw/nw/e/w/n/desce/se/ascen/s/ne/
+[140]: Dead end
+  To get to [112] say:n/leave/
+You awaken only to discover your bits have been dissolving while you
+slept.  You disappear in a cloud of greasy black smoke.
