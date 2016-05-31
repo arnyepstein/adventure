@@ -48,11 +48,44 @@ public class DataFile extends AdvGameData
 	
 	private BufferedReader _in;
 	// ---------------------------------------------------------------------
-	static class LevelInfo
+	static class MessageListSet extends ArrayList<MessageList> {
+		public MessageListSet() { super(256); }
+		public MessageListSet(int initialCapacity) { super(initialCapacity); }
+
+		public void addMessageToList( int listNumber, String message ) {
+			this.ensureCapacity(listNumber+1);
+			while(size() <= listNumber) {
+				super.add(null);
+			}
+
+			MessageList list = this.get(listNumber);
+			if(list == null) {
+				list = new MessageList(message);
+				set(listNumber, list);
+			} else {
+				list.add(message);
+			}
+		}
+
+		@Override
+		public MessageList get(int index) {
+			return (index >=0 && index < size()) ? super.get(index) : null;
+		}
+
+	}
+	// ---------------------------------------------------------------------
+	static class MessageList extends ArrayList<String> {
+		public MessageList(String message) {
+			super(4);
+			this.add( message );
+		}
+	}
+	// ---------------------------------------------------------------------
+	static class ClassMessage
 	{
 		int max_score;
 		String message;
-		public LevelInfo( int max_score, String message )
+		public ClassMessage(int max_score, String message )
 		{
 			this.max_score = max_score;
 			this.message = message;
@@ -65,110 +98,95 @@ public class DataFile extends AdvGameData
 		int last_string_number = -1;
 	}
 	// ---------------------------------------------------------------------
-	private static class RMsgInfo
+	private static class ObjectDescriptors
 	{
 		String description_string = null;
-		ArrayList<MsgInfo> info_list = new ArrayList<MsgInfo>(4);
+		MessageListSet messageSet =  new MessageListSet(4);
+		int place;
+		int fixedLoc;
+
+		ObjectDescriptors(String description) {
+			this.description_string = description;
+		}
+		public MessageList getList(int index) {
+			return messageSet.get(index);
+		}
+		public void addMessageToList(int listNumber, String message) {
+			messageSet.addMessageToList(listNumber, message);
+		}
 	}
 	// ---------------------------------------------------------------------
 
 	public DataFile()
 	{
-		
-		rdata();
 	}
 	// ---------------------------------------------------------------------
 	public void rspeak( int msg_id )
 	{
-		_speak( _rtext, msg_id );
+		_speak(randomDescriptionSet, msg_id );
 	}
 	// ---------------------------------------------------------------------
 	public boolean hasRText( int msg_id )
 	{
-		return _hasText( _rtext, msg_id );
+		return _hasText(randomDescriptionSet, msg_id );
 	}
 	// ---------------------------------------------------------------------
 	public boolean hasPText( int msg_id )
 	{
-		return 
-			(msg_id < _ptext.size())
-			&& _ptext.get(msg_id).description_string != null;
+		return msg_id >=0 && msg_id < objectDescriptorsList.size() && null != objectDescriptorsList.get(msg_id);
 	}
 	// ---------------------------------------------------------------------
 	public boolean hasLText( int msg_id )
 	{
-		return _hasText( _ltext, msg_id );
+		return _hasText(longDescriptionSet, msg_id );
 	}
 	// ---------------------------------------------------------------------
-	private boolean _hasText( ArrayList<MsgInfo> list, int msg_id )
+	private boolean _hasText( MessageListSet messageSet, int msg_id )
 	{
-		if( msg_id < list.size() )
-		{
-			MsgInfo info = list.get( msg_id );
-			if( info != null && info.first_string_number != -1 )
-			{
-				return true;
-			}
-		}
-		return false;
+		return null != messageSet.get(msg_id);
 	}
 	// ---------------------------------------------------------------------
-	public MsgInfo getMText( int msg_id )
+	public MessageList getMText( int msg_id )
 	{
-		return _getText( _mtext, msg_id );
+		return magicDescriptionSet.get(msg_id);
 	}
 	// ---------------------------------------------------------------------
-	public MsgInfo getLText( int msg_id )
+	public MessageList getLText( int msg_id )
 	{
-		return _getText( _ltext, msg_id );
+		return longDescriptionSet.get(msg_id);
 	}
 	// ---------------------------------------------------------------------
-	public MsgInfo getRText( int msg_id )
+	public MessageList getRText( int msg_id )
 	{
-		return _getText( _rtext, msg_id );
+		return randomDescriptionSet.get(msg_id);
 	}
 	// ---------------------------------------------------------------------
-	public MsgInfo getSText( int msg_id )
+	public MessageList getSText( int msg_id )
 	{
-		return _getText( _stext, msg_id );
-	}
-	// ---------------------------------------------------------------------
-	private MsgInfo _getText( ArrayList<MsgInfo> list, int msg_id )
-	{
-		if( msg_id < list.size() )
-		{
-			MsgInfo info = list.get( msg_id );
-			if( info != null && info.first_string_number != -1 )
-			{
-				return info;
-			}
-		}
-		return null;
+		return shortDescriptionSet.get(msg_id);
 	}
 	// ---------------------------------------------------------------------
 	public void mspeak( int msg_id )
 	{
-		_speak( _mtext, msg_id );
+		_speak(magicDescriptionSet, msg_id );
 	}
 	// ---------------------------------------------------------------------
 	public void lspeak( int msg_id )
 	{
-		_speak( _ltext, msg_id );
+		_speak(longDescriptionSet, msg_id );
 	}
 	// ---------------------------------------------------------------------
 	public void pspeak( int msg_id, int skip )
 	{
-		_speak( _ptext.get(msg_id).info_list, skip );
+		_speak( objectDescriptorsList.get(msg_id).messageSet, skip );
 	}
 	// ---------------------------------------------------------------------
-	public void speak( MsgInfo info )
+	public void speak( MessageList list )
 	{
-		//DP("Speak (from {0} to {1})", info.first_string_number, info.last_string_number);
-		for( int ix = info.first_string_number;
-			 ix > 0 && ix <= info.last_string_number;
-			 ++ix )
-		{
-			System.out.println( _strings.get(ix) );
+		if(list != null) {
+			for (String s : list) {
+				System.out.println( s );
+			}
 		}
 	}
 	// ---------------------------------------------------------------------
@@ -191,12 +209,25 @@ public class DataFile extends AdvGameData
 		throw new RuntimeException("Invalid input to getHint: " + hintid + ", " + which );
 	}
 	// ---------------------------------------------------------------------
-	public LevelInfo getLevelInfo( int index )
+	public ClassMessage getLevelInfo(int index )
 	{
-		return ( index < _ctext.size() ) ? _ctext.get(index) : null;
+		return ( index < classMessageList.size() ) ? classMessageList.get(index) : null;
 	}
 	// ---------------------------------------------------------------------
-	public int vocab( String s, int type )
+	enum Usage {
+		DESTINATION,
+		OBJECT,
+		VERB,
+		MAGIC,
+		ANY;
+
+		public static Usage fromValue(int value) {
+			return values()[value];
+		}
+
+	}
+	// ---------------------------------------------------------------------
+	public int vocab( String s, Usage usage )
 	{
 		// Lookup
 		String key = s;
@@ -208,7 +239,7 @@ public class DataFile extends AdvGameData
 		Integer value = _vocab.get( key );
 		if( value == null )
 		{
-			if(type == -1)
+			if(usage == Usage.ANY)
 			{
 				if( db_dump_vocab )
 				{
@@ -220,23 +251,24 @@ public class DataFile extends AdvGameData
 		}
 		
 		int val = value.intValue();
-		int vtype = val/1000;
+		Usage vusage = Usage.fromValue(val/1000);
+//		int vtype = val/1000;
 		int vval = val%1000;
 		if( db_dump_vocab )
 		{
-			printf("Vocab({0}, {1}): t={2}, val={3}", key, type, vtype, vval);
+			printf("Vocab({0}, {1}): t={2}, val={3}", key, usage, vusage, vval);
 		}
 		
-		if( type == -1 )
+		if( usage == Usage.ANY )
 		{
 			return val;
 		}
-		if( vtype == type )
+		if( usage == vusage )
 		{
 			return vval;
 		}
 		throw new RuntimeException(
-			"Found '"+s+"' with value "+val+", looking for type " + type
+			"Found '"+s+"' with value "+val+" and usage "+vusage +", but looking for type " + usage
 		);
 	}
 	// ---------------------------------------------------------------------
@@ -265,7 +297,7 @@ public class DataFile extends AdvGameData
 		System.exit(id);
 	}
 	// ---------------------------------------------------------------------
-	private void rdata()   // "read" data from virtual file
+	public void loadDataFile()   // "read" data from virtual file
 	{
 		// DP("Enter RDATA()");
 		_in = new BufferedReader(
@@ -276,48 +308,48 @@ public class DataFile extends AdvGameData
 		while( true )
 		{
 			// Calculate the Section Number
-			_getLine();
-			int section = _getNumber();
+			String line = AdvIO.getLine(_in);
+			int section = atoi(line);
 			//DP( "Section Number: {0}", section );
 			switch(section)
 			{
 				case 0:			 //  finished reading database	
 					return;
 				case 1:			 //  long form descriptions	   
-					rdesc(_ltext);
+					loadDescriptions(longDescriptionSet);
 					break;
 				case 2:			 //  short form descriptions	  
-					rdesc(_stext);
+					loadDescriptions(shortDescriptionSet);
 					break;
 				case 3:			 //  travel table	
-					rtrav();
+					loadTravelData();
 					break;
 				case 4:			 //  vocabulary				   
-					rvoc();
+					loadVocabulary();
 					break;
 				case 5:			 //  object descriptions		  
-					rdescp();
+					loadObjectDescriptions();
 					break;
 				case 6:			 //  arbitrary messages		   
-					rdesc(_rtext);
+					loadDescriptions(randomDescriptionSet);
 					break;
 				case 7:			 //  object locations			 
-					rlocs();
+					loadObjectLocations();
 					break;
 				case 8:			 //  action defaults			  
-					rdflt();
+					loadActionDefaults();
 					break;
 				case 9:			 //  liquid assets				
-					rliq();
+					loadLiquidAssets();
 					break;
 				case 10:			//  class messages			   
-					rdescc();
+					loadClassMessages();
 					break;
 				case 11:			//  hints						
-					rhints();
+					loadHints();
 					break;
 				case 12:			//  magic messages			   
-					rdesc(_mtext);
+					loadDescriptions(magicDescriptionSet);
 					break;
 				default:
 					DP(
@@ -329,97 +361,94 @@ public class DataFile extends AdvGameData
 			}
 		}
 	}
+	private final static String SPLIT_PATTERN = "[\\t ]";
 	// ---------------------------------------------------------------------
-	void rdesc(ArrayList<MsgInfo> list)
+	void loadDescriptions(MessageListSet listSet)
 	{
 		while( true )
 		{
-			_getLine();
-			int msgno = _getNumber();
-			if( msgno < 0 )
-			{
+			String line = AdvIO.getLine(_in);
+			String parts[] = line.split(SPLIT_PATTERN,2);
+			int listNumber = Integer.valueOf(parts[0]);
+			if(listNumber<0) {
 				break;
 			}
-			_skipWS();
-			String msg = _curline.substring( _curindex );
-			_addMessage( list, msgno, msg );
+			String msg = parts[1];
+			listSet.addMessageToList(listNumber, msg);
+		}
+	}
+	// ---------------------------------------------------------------------
+	void loadClassMessages()
+	{
+		while( true )
+		{
+			String line = AdvIO.getLine(_in);
+			String parts[] = line.split(SPLIT_PATTERN,2);
+			int score = Integer.valueOf(parts[0]);
+			if(score<0) {
+				break;
+			}
+			String msg = parts[1];
+
+			ClassMessage info = new ClassMessage( score, msg );
+			classMessageList.add( info );
 			//DP("Msg#({0}), ({1})", msgno, msg );
 		}
 	}
 	// ---------------------------------------------------------------------
-	void rdescc()
-	{
-		while( true )
-		{
-			_getLine();
-			int score = _getNumber();
-			if( score < 0 )
-			{
-				break;
-			}
-			_skipWS();
-			String msg = _curline.substring( _curindex );
-			LevelInfo info = new LevelInfo( score, msg );
-			_ctext.add( info );
-			//DP("Msg#({0}), ({1})", msgno, msg );
-		}
-	}
-	// ---------------------------------------------------------------------
-	void rdescp()
+	void loadObjectDescriptions()
 	{
 		int outer_msgno = -1;
-		RMsgInfo rminfo = null;
+		ObjectDescriptors rminfo = null;
 		ArrayList<MsgInfo> list = null;
 		while( true )
 		{
-			_getLine();
-			int msgno = _getNumber();
-			if( msgno < 0 )
-			{
+			String line = AdvIO.getLine(_in);
+			String parts[] = line.split(SPLIT_PATTERN,2);
+			int listNumber = Integer.valueOf(parts[0]);
+			if(listNumber<0) {
 				break;
 			}
-			_skipWS();
-			String msg = _curline.substring( _curindex );
-			
-			if( msgno==0 || msgno >= 100 )
+			String msg = parts[1];
+
+			if( listNumber>0 && listNumber < 100 )
 			{
-				_addMessage( rminfo.info_list, msgno/100, msg );
-				//DP("Msg#({0}.{1}), ({2})", outer_msgno, msgno/100, msg );
+				// Begin a new Object Descriptor
+				outer_msgno = listNumber;
+				while( outer_msgno >= objectDescriptorsList.size() )
+				{
+					objectDescriptorsList.add( new ObjectDescriptors(null) );
+				}
+				rminfo = new ObjectDescriptors(msg);
+				objectDescriptorsList.set(outer_msgno, rminfo);
 			}
 			else
 			{
-				outer_msgno = msgno;
-				while( outer_msgno >= _ptext.size() )
-				{
-					_ptext.add( new RMsgInfo() );
-				}
-				rminfo = _ptext.get( outer_msgno );
-				rminfo.description_string = msg;
+				rminfo.addMessageToList(listNumber/100, msg);
 			}
 		}
 	}
 	// ---------------------------------------------------------------------
-	void rtrav()
+	void loadTravelData()
 	{
 		TravList t = null;
 		int entries = 0;
 		int oldloc= -1;
 		while(true)			//  get another line			 
-		{	   
-			_getLine();
-			int locc = _getNumber();
-
-			if (locc != oldloc && oldloc>=0) //  end of entry 
+		{
+			String line = AdvIO.getLine(_in);
+			String parts[] = line.split(SPLIT_PATTERN);
+			int locc = Integer.valueOf(parts[0]);
+			if(locc == -1) {
+				break;
+			}
+			if (locc != oldloc && oldloc>=0) //  end of entry
 			{
 				t.next = null;	//  terminate the old entry	  
 				//DP("{0}:{1} entries", oldloc, entries );
 			//	   twrite(oldloc);								 
 			}
-			if (locc== -1)
-			{
-				break;
-			}
-			if (locc != oldloc)		//  getting a new entry		 
+			if (locc != oldloc)		//  getting a new entry
 			{	
 				while( locc >= _travel.size() )
 				{
@@ -432,27 +461,24 @@ public class DataFile extends AdvGameData
 				oldloc = locc;
 			}
 			// Get the newloc number
-			int v1 = _getNumber();
+			int v1 = atoi(parts[1]);
 			int m = v1/1000;
 			int n = v1%1000;
-			_skipWS();	   
-			while (_curindex < _curlength )	 //  only do one line at a time   
+			for(int ord=2; ord<parts.length; ord++)
 			{
 				if (0 != (entries++) )
 				{
 					t.next = new TravList();
 					t = t.next;
 				}
-				t.tverb= _getNumber();	//  get verb from the file	   
-				t.tloc = n;	  			//  table entry mod 1000		 
-				t.conditions = m;		//  table entry / 1000	
-				_skipWS();	   
-				//DP("entry {0} for {1}", entries, locc );	   
+				t.tverb= atoi(parts[ord]);	//  get verb from the file
+				t.tloc = n;	  			//  table entry mod 1000
+				t.conditions = m;		//  table entry / 1000
 			}
 		}
 	}
 	// ---------------------------------------------------------------------
-	void rvoc()
+	void loadVocabulary()
 	{
 		if( db_dump_travel )
 		{
@@ -462,13 +488,14 @@ public class DataFile extends AdvGameData
 		Integer value = new Integer(2);
 		while( true )
 		{
-			_getLine();
-			int id = _getNumber();
+			String line = AdvIO.getLine(_in);
+			String parts[] = line.split(SPLIT_PATTERN);
+			int id = atoi(parts[0]);
 			if( id == -1 )
 			{
 				break;
 			}
-			String name = _getToken();
+			String name = parts[1];
 			if( id != value.intValue() )
 			{
 				value = new Integer(id);
@@ -491,63 +518,64 @@ public class DataFile extends AdvGameData
 		}
 	}
 	// ---------------------------------------------------------------------
-	void rlocs()
+	void loadObjectLocations()
 	{
 		while( true )
 		{
-			_getLine();
-			int objid = _getNumber();
+			String line = AdvIO.getLine(_in);
+			String parts[] = line.split(SPLIT_PATTERN);
+			int objid = atoi(parts[0]);
 			if( objid == -1 )
 			{
 				break;
 			}
-			plac[objid] = _getNumber();
-			_skipWS();
-			if( _curindex < _curlength )
-			{
-				fixd[objid] = _getNumber();
-			}
-			else
-			{
-				fixd[objid] = 0;
-			}
+			ObjectDescriptors desc = objectDescriptorsList.get(objid);
+			int place = atoi(parts[1]);
+			int value = (parts.length == 3) ? atoi(parts[2]) : 0;
+
+			desc.place = place;
+			desc.fixedLoc = value;
+
+			plac[objid] = place;
+			fixd[objid] = value;
 			//DP("Loc for Obj[{0}]: plac({1}), fixd({2})", objid, plac[objid], fixd[objid] );
 		}
 	}
 	// ---------------------------------------------------------------------
-	void rdflt()
+	void loadActionDefaults()
 	{
 		while( true )
 		{
-			_getLine();
-			int verbid = _getNumber();
+			String line = AdvIO.getLine(_in);
+			String parts[] = line.split(SPLIT_PATTERN);
+
+			int verbid = atoi(parts[0]);
 			if( verbid == -1 )
 			{
 				break;
 			}
-			actspk[verbid] = _getNumber();
+			actspk[verbid] = atoi(parts[1]);
 			//DP("ActSpk for Verb[{0}]: msgid({1})", verbid, actspk[verbid]);
 			//rspeak( actspk[verbid] );
 		}
 	}
 	// ---------------------------------------------------------------------
-	void rliq()
+	void loadLiquidAssets()
 	{
 		while( true )
 		{
-			_getLine();
-			int bitnum = _getNumber();
+			String line = AdvIO.getLine(_in);
+			String parts[] = line.split(SPLIT_PATTERN);
+			int bitnum = atoi(parts[0]);
 			if( bitnum == -1 )
 			{
 				break;
 			}
 			int flag = 1<<bitnum;
-			do
+			for(int ord=1; ord<parts.length; ord++)
 			{
-				cond[ _getNumber()] |= flag;
-				_skipWS();
+				cond[ atoi(parts[ord])] |= flag;
 			}
-			while( _curindex < _curlength );
 		}
 		for( int i=0; i<cond.length; i++ )
 		{
@@ -556,12 +584,13 @@ public class DataFile extends AdvGameData
 		
 	}
 	// ---------------------------------------------------------------------
-	void rhints()
+	void loadHints()
 	{
 		while( true )
 		{
-			_getLine();
-			int hintnum = _getNumber();
+			String line = AdvIO.getLine(_in);
+			String parts[] = line.split(SPLIT_PATTERN);
+			int hintnum = atoi(parts[0]);
 			if( hintnum == -1 )
 			{
 				break;
@@ -571,13 +600,10 @@ public class DataFile extends AdvGameData
 				_hints.add( new int[5] );
 			}
 			int hints[] = _hints.get( hintnum );
-			int ix = 0;
-			do
+			for(int ord=1; ord<parts.length; ord++)
 			{
-				hints[ ix++ ] = _getNumber();
-				_skipWS();
+				hints[ ord-1 ] = atoi(parts[ord]);
 			}
-			while( _curindex < _curlength );
 			//DP("hint[{0}] = {1} {2} {3} {4} {5}",  hintnum, hints[0], hints[1], hints[2], hints[3], hints[4] );
 		}
 	}
@@ -594,16 +620,7 @@ public class DataFile extends AdvGameData
 			}
 			
 			// Info for Travel from Location[it].
-			int desc_id = -1;
-			if( it < _stext.size() )
-			{
-				desc_id = _stext.get(it).first_string_number;
-			}
-			if(desc_id == -1)
-			{
-				desc_id = _ltext.get(it).first_string_number;
-			}
-			String desc = (desc_id != -1) ? _strings.get(desc_id) : "????";
+			String desc = getPlaceDescription(it);
 			printf("[{0}, cond({1})]: {2}", it, Integer.toHexString(cond[it]),desc);
 			for (int oix = 0; oix<=LAST_OBJECT_INDEX; oix++)
 			{
@@ -632,7 +649,7 @@ public class DataFile extends AdvGameData
 					prev_to_loc = cur_to_loc;
 					// New Location
 					sb.append( "  To get to [" )
-						.append(cur_to_loc).append(']');
+						.append(getPlaceDescription(cur_to_loc)).append(']');
 					if( tl.conditions != 0 )
 					{
 						sb.append(" with cond(")
@@ -649,7 +666,20 @@ public class DataFile extends AdvGameData
 			System.out.println(sb.toString());
 		}
 	}
-	
+
+	private String getPlaceDescription(int placeId) {
+		MessageList messageList = getMessageListForPlace(placeId);
+		return (messageList != null) ? messageList.get(0) : "????";
+	}
+	// ---------------------------------------------------------------------
+	private MessageList getMessageListForPlace(int placeId) {
+		MessageList messageList = shortDescriptionSet.get(placeId);
+		if(messageList == null)
+		{
+			messageList = longDescriptionSet.get(placeId);
+		}
+		return messageList;
+	}
 	// ---------------------------------------------------------------------
 	private String _getVerbName(int id)
 	{
@@ -665,91 +695,16 @@ public class DataFile extends AdvGameData
 		
 	}
 	// ---------------------------------------------------------------------
-	private void _skipWS ()
-	{
-		while( _curindex < _curlength 
-			   && ( _curline.charAt(_curindex ) == '\t' 
-			   || _curline.charAt(_curindex ) == ' ' ) )
-		{
-			++_curindex;
-		}
-	}
-	// ---------------------------------------------------------------------
-	private void _spanToWS()
-	{
-		while( _curindex < _curlength 
-			   && _curline.charAt(_curindex ) != '\t' 
-			   && _curline.charAt(_curindex ) != ' ' )
-		{
-			++_curindex;
-		}
-	}
-	// ---------------------------------------------------------------------
-	private String _getToken ()
-	{
-		_skipWS(  );
-		int first = _curindex;
-		_spanToWS();
-		//DP("Token; {0}:{1}={2}", _curline, first, _curindex );
-		String token = _curline.substring( first, _curindex );
-		return token;
-	}
-	// ---------------------------------------------------------------------
 	private int atoi(String num_text)
 	{
 		return Integer.parseInt( num_text );
 	}
 	// ---------------------------------------------------------------------
-	private int _getNumber()
+	private void _speak( MessageListSet listSet, int msg_id )
 	{
-		String num_text = _getToken();
-		return Integer.parseInt( num_text );
-	}
-	// ---------------------------------------------------------------------
-	private void _getLine()
-	{
-		do
-		{
-			_curline =  AdvIO.getLine( _in );
-			_curlength = _curline == null ? 0 : _curline.length();
-			_curindex = 0;
+		if( msg_id < listSet.size() ) {
+			speak(listSet.get(msg_id));
 		}
-		while( _curlength > 0 && _curline.charAt(0) == '#' );
-	}
-	// ---------------------------------------------------------------------
-	private void _speak( ArrayList<MsgInfo> list, int msg_id )
-	{
-		MsgInfo info = list.get( msg_id );
-		if( info == null )
-		{
-			throw new RuntimeException( "No Message Number: " + msg_id );
-		}
-		speak( info );				
-	}
-	// ---------------------------------------------------------------------
-	private void _addMessage( ArrayList<MsgInfo> list, int msg_id, String msg )
-	{
-		// Save the String
-		int string_number = _addString( msg );
-
-		while( msg_id >= list.size() )
-		{
-			list.add( new MsgInfo() );
-		}
-		MsgInfo info = list.get( msg_id );
-		if( info.first_string_number == -1 )
-		{
-			info.first_string_number = string_number;
-		}
-		info.last_string_number = string_number;
-	}
-	// ---------------------------------------------------------------------
-	private int _addString( String msg )
-	{
-		// Save the String
-		int string_number = _strings.size();
-		_strings.add( msg );
-		return string_number;
 	}
 	// ---------------------------------------------------------------------
 	private static void DP( String fmt, Object... args )
@@ -762,12 +717,12 @@ public class DataFile extends AdvGameData
 	private int _curindex;
 	private int _curlength;
 	private ArrayList<String> _strings = new ArrayList<String>();
-	private ArrayList<MsgInfo> _ltext = new ArrayList<MsgInfo>();
-	private ArrayList<MsgInfo> _stext = new ArrayList<MsgInfo>();
-	private ArrayList<RMsgInfo> _ptext = new ArrayList<RMsgInfo>();
-	private ArrayList<MsgInfo> _rtext = new ArrayList<MsgInfo>();
-	private ArrayList<LevelInfo> _ctext = new ArrayList<LevelInfo>();
-	private ArrayList<MsgInfo> _mtext = new ArrayList<MsgInfo>();
+	private MessageListSet longDescriptionSet = new MessageListSet();
+	private MessageListSet shortDescriptionSet = new MessageListSet();
+	private MessageListSet randomDescriptionSet = new MessageListSet();
+	private MessageListSet magicDescriptionSet = new MessageListSet();
+	private ArrayList<ObjectDescriptors> objectDescriptorsList = new ArrayList<ObjectDescriptors>();
+	private ArrayList<ClassMessage> classMessageList = new ArrayList<ClassMessage>();
 	private ArrayList<TravList> _travel = new ArrayList<TravList>();
 	private HashMap<String, Integer> _vocab = new HashMap<String, Integer>();
 	

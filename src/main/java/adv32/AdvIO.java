@@ -56,7 +56,16 @@ public class AdvIO extends DataFile
 			);
 	}
 	// ---------------------------------------------------------------------
-	public static String getLine(BufferedReader in)
+	public static String getLine(BufferedReader in) {
+		while(true) {
+			String line = getAnyLine(in);
+			if(line.charAt(0) != '#') {
+				return line;
+			}
+		}
+	}
+	// ---------------------------------------------------------------------
+	public static String getAnyLine(BufferedReader in)
 	{
 		while( true )
 		{
@@ -66,10 +75,13 @@ public class AdvIO extends DataFile
 				line = in.readLine();
 				if( line == null )
 				{
-					continue;
+					throw new IllegalStateException("Unexpected EOF in DataFile");
 				}
 				line = line.trim();
-				return line;
+				// Skip Blank Lines
+				if(line.length()>0) {
+					return line;
+				}
 			}
 			catch(IOException ex)
 			{
@@ -112,7 +124,7 @@ public class AdvIO extends DataFile
 		{	 
 			String line = _getInputLine();
 
-			words[0] = words[1] = "";
+			words[0] = words[1] = null;
 			int index_of_space = line.indexOf(' ');
 			if( index_of_space == -1 )
 			{

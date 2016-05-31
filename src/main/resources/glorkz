@@ -875,10 +875,10 @@
 ##########################################
 #  Vocabulary (rvoc)
 #  { value, text } value is (type*1000 + id)
-#    type 0 = 
+#    type 0 = destination command (place or direction)
 #    type 1 = object (prop) names
-#    type 2 = 
-#    type 3 = 
+#    type 2 = action names (verbs)
+#    type 3 = magic-related words (value is rdesc message id)
 ##########################################
 4
 2	road

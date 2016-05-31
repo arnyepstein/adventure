@@ -39,9 +39,6 @@
  */
 package adv32;
 
-import java.util.Date;
-import java.util.Random;
-
 public class Adv32 extends Wizard
 {
 
@@ -72,6 +69,14 @@ public class Adv32 extends Wizard
 				isVerbose = true;
 				continue;
 			}
+			if("-dv".equals(arg)) {
+				db_dump_vocab = true;
+				continue;
+			}
+			if("-dt".equals(arg)) {
+				db_dump_travel = true;
+				continue;
+			}
 			path = arg;
 		}
 		this.doGame( path );
@@ -79,7 +84,7 @@ public class Adv32 extends Wizard
 	
     private void doGame( String path )
     {
-		DataFile.MsgInfo kk = null;
+		MessageList kk = null;
 		int next_label = L_NEWGAME;
 		int rval, ll;
 		int i;
@@ -274,13 +279,13 @@ public class Adv32 extends Wizard
 				if ((!weq(wd1,"water")&&!weq(wd1,"oil"))
 					|| (!weq(wd2,"plant")&&!weq(wd2,"door")))
 					{next_label=2610; continue;}
-				if (at(vocab(wd2,1))) wd2 = "pour";
+				if (at(vocab(wd2,Usage.OBJECT))) wd2 = "pour";
 		
 			case 2610:
 				if (weq(wd1,"west"))
 				if (++iwest==10) rspeak(17);
 			case 2630:
-				i=vocab(wd1,-1);
+				i=vocab(wd1,Usage.ANY);
 				if (i== -1)
 				{       spk=60;                 //  3000         
 					if (pct(20)) spk=61;
@@ -397,7 +402,7 @@ public class Adv32 extends Wizard
 						if (gaveup) done(2);
 						{next_label=L_NEXT_MOVE; continue;}
 					case 25:                    //  foo: 8250            
-						k=vocab(wd1,3);
+						k=vocab(wd1, Usage.MAGIC);
 						spk=42;
 						if (foobar==1-k) {next_label=8252; continue;}
 						if (foobar!=0) spk=151;
@@ -1234,7 +1239,7 @@ public class Adv32 extends Wizard
 	{   
 		int i;
 		if (wd2!=null ) wd1 = wd2;
-		i=vocab(wd1,-1);
+		i=vocab(wd1, Usage.ANY);
 		if (i==62||i==65||i==71||i==2025)
 		{       
 			wd2=null;
@@ -1726,7 +1731,7 @@ public class Adv32 extends Wizard
 			turns
 		);
 		printf("");
-		LevelInfo info = null;
+		ClassMessage info = null;
 		int index = 0;
 		
 		
@@ -1736,7 +1741,7 @@ public class Adv32 extends Wizard
 				continue;
 			// Found the player's level
 			printf( info.message );
-			LevelInfo next_level = getLevelInfo( index );
+			ClassMessage next_level = getLevelInfo( index );
 			if( next_level == null )
 			{
 				printf("To achieve the next higher rating would be a neat trick!");
@@ -1867,6 +1872,7 @@ public class Adv32 extends Wizard
 	//  everything for 1st time run  
 	private void init()
 	{
+		loadDataFile();
 		linkdata();
 		if(db_dump_travel)
 		{
@@ -1916,68 +1922,68 @@ public class Adv32 extends Wizard
 		}
 	
 		//  define mnemonics 
-		keys = vocab("keys", 1);
-		lamp = vocab("lamp", 1);
-		grate = vocab("grate", 1);
-		cage = vocab("cage", 1);
-		rod = vocab("rod", 1);
+		keys = vocab("keys", Usage.OBJECT);
+		lamp = vocab("lamp", Usage.OBJECT);
+		grate = vocab("grate", Usage.OBJECT);
+		cage = vocab("cage", Usage.OBJECT);
+		rod = vocab("rod", Usage.OBJECT);
 		rod2=rod+1;
-		steps = vocab("steps", 1);
-		bird = vocab("bird", 1);
-		door = vocab("door", 1);
-		pillow = vocab("pillow", 1);
-		snake = vocab("snake", 1);
-		fissur = vocab("fissur", 1);
-		tablet = vocab("tablet", 1);
-		clam = vocab("clam", 1);
-		oyster = vocab("oyster", 1);
-		magzin = vocab("magaz", 1);
-		dwarf = vocab("dwarf", 1);
-		knife = vocab("knife", 1);
-		food = vocab("food", 1);
-		bottle = vocab("bottle", 1);
-		water = vocab("water", 1);
-		oil = vocab("oil", 1);
-		plant = vocab("plant", 1);
+		steps = vocab("steps", Usage.OBJECT);
+		bird = vocab("bird", Usage.OBJECT);
+		door = vocab("door", Usage.OBJECT);
+		pillow = vocab("pillow", Usage.OBJECT);
+		snake = vocab("snake", Usage.OBJECT);
+		fissur = vocab("fissur", Usage.OBJECT);
+		tablet = vocab("tablet", Usage.OBJECT);
+		clam = vocab("clam", Usage.OBJECT);
+		oyster = vocab("oyster", Usage.OBJECT);
+		magzin = vocab("magaz", Usage.OBJECT);
+		dwarf = vocab("dwarf", Usage.OBJECT);
+		knife = vocab("knife", Usage.OBJECT);
+		food = vocab("food", Usage.OBJECT);
+		bottle = vocab("bottle", Usage.OBJECT);
+		water = vocab("water", Usage.OBJECT);
+		oil = vocab("oil", Usage.OBJECT);
+		plant = vocab("plant", Usage.OBJECT);
 		plant2=plant+1;
-		axe = vocab("axe", 1);
-		mirror = vocab("mirror", 1);
-		dragon = vocab("dragon", 1);
-		chasm = vocab("chasm", 1);
-		troll = vocab("troll", 1);
+		axe = vocab("axe", Usage.OBJECT);
+		mirror = vocab("mirror", Usage.OBJECT);
+		dragon = vocab("dragon", Usage.OBJECT);
+		chasm = vocab("chasm", Usage.OBJECT);
+		troll = vocab("troll", Usage.OBJECT);
 		troll2=troll+1;
-		bear = vocab("bear", 1);
-		messag = vocab("messag", 1);
-		vend = vocab("vendi", 1);
-		batter = vocab("batter", 1);
-		spices = vocab("spices", 1);
+		bear = vocab("bear", Usage.OBJECT);
+		messag = vocab("messag", Usage.OBJECT);
+		vend = vocab("vendi", Usage.OBJECT);
+		batter = vocab("batter", Usage.OBJECT);
+		spices = vocab("spices", Usage.OBJECT);
 
-		nugget = vocab("nugget", 1);
-		coins = vocab("coins", 1);
-		chest = vocab("chest", 1);
-		eggs = vocab("eggs", 1);
-		tridnt = vocab("tride", 1);
-		vase = vocab("vase", 1);
-		emrald = vocab("emera", 1);
-		pyram = vocab("pyram", 1);
-		pearl = vocab("pearl", 1);
-		rug = vocab("rug", 1);
-		chain = vocab("chain", 1);
+		nugget = vocab("nugget", Usage.OBJECT);
+		coins = vocab("coins", Usage.OBJECT);
+		chest = vocab("chest", Usage.OBJECT);
+		eggs = vocab("eggs", Usage.OBJECT);
+		tridnt = vocab("tride", Usage.OBJECT);
+		vase = vocab("vase", Usage.OBJECT);
+		emrald = vocab("emera", Usage.OBJECT);
+		pyram = vocab("pyram", Usage.OBJECT);
+		pearl = vocab("pearl", Usage.OBJECT);
+		rug = vocab("rug", Usage.OBJECT);
+		chain = vocab("chain", Usage.OBJECT);
 
-		back = vocab("back", 0);
-		look = vocab("look", 0);
-		cave = vocab("cave", 0);
-		vnull = vocab("null", 0);
-		entrnc = vocab("entra", 0);
-		dprssn = vocab("depre", 0);
-		enter = vocab("enter", 0);
+		back = vocab("back", Usage.DESTINATION);
+		look = vocab("look", Usage.DESTINATION);
+		cave = vocab("cave", Usage.DESTINATION);
+		vnull = vocab("null", Usage.DESTINATION);
+		entrnc = vocab("entra", Usage.DESTINATION);
+		dprssn = vocab("depre", Usage.DESTINATION);
+		enter = vocab("enter", Usage.DESTINATION);
 
-		pour = vocab("pour", 2);
-		say = vocab("say", 2);
-		lock = vocab("lock", 2);
-		vthrow = vocab("throw", 2);
-		find = vocab("find", 2);
-		invent = vocab("inven", 2);
+		pour = vocab("pour", Usage.VERB);
+		say = vocab("say", Usage.VERB);
+		lock = vocab("lock", Usage.VERB);
+		vthrow = vocab("throw", Usage.VERB);
+		find = vocab("find", Usage.VERB);
+		invent = vocab("inven", Usage.VERB);
 	
 		//  initialize dwarves 
 		chloc=114;
