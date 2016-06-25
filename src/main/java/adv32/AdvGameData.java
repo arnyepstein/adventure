@@ -42,8 +42,6 @@ package adv32;
 
 public class AdvGameData extends AdvSaveData
 {
-	public final static boolean TRUE = true;
-	public final static boolean FALSE = false;
 	public final static int TURNS_IN_A_DEMO_GAME=50;// How short is a demo game?
 
 	// ---------------------------------------------------------------------
@@ -122,15 +120,14 @@ public class AdvGameData extends AdvSaveData
 	public int saved;
 	
 	// various flags & counters
-	public boolean closng;
-	public boolean closed;
-	public boolean scorng;
+	public boolean isClosing;
+	public boolean isClosed;
+	public boolean isScoring;
 	//
 	//	
 	public int delhit;
 	public int hntmax;
 	public int hintlc[] = new int[20];
-	public String words[] = new String[2];
 	public String wd1 = null;
 	public String wd2 = null;
 	public int abb[] = new int[LAST_LOCATION_INDEX+1];

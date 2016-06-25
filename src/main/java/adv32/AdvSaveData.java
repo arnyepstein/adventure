@@ -103,7 +103,7 @@ class AdvSaveData implements java.io.Serializable
     public int atloc;
 	public int dwarfLoc[] = new int[7];  // dwarf stuff
 	public int odloc[] = new int[7];
-	public boolean dseen[] = new boolean[7];
+	public boolean dwarfSeenAtLoc[] = new boolean[7];
 	public boolean hinted[] = new boolean[20];
 	public int link[] = new int[FIXED_OBJECT_OFFSET + LAST_OBJECT_INDEX + 1];
 	public int place[] = new int[LAST_OBJECT_INDEX+1];

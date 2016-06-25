@@ -45,8 +45,6 @@ import java.util.*;
 
 public class DataFile extends AdvGameData
 {
-	
-	private BufferedReader _in;
 	// ---------------------------------------------------------------------
 	static class MessageListSet extends ArrayList<MessageList> {
 		public MessageListSet() { super(256); }
@@ -309,15 +307,26 @@ public class DataFile extends AdvGameData
 	public void loadDataFile()   // "read" data from virtual file
 	{
 		// DP("Enter RDATA()");
-		_in = new BufferedReader(
+		BufferedReader reader = new BufferedReader(
 				new InputStreamReader(
 					ClassLoader.getSystemResourceAsStream( "glorkz" )
 				)
 			);
+
+		int curline = 0;
 		while( true )
 		{
 			// Calculate the Section Number
-			String line = AdvIO.getLine(_in);
+			String line;
+			do {
+				line = AdvIO.getAnyLine(reader);
+				++curline;
+				if (line == null) {
+					System.out.println("Unexpected EOF from Configuration Data");
+					System.exit(3);
+				}
+			} while(line.length() == 0 || line.charAt(0) == '#');
+
 			int section = atoi(line);
 			//DP( "Section Number: {0}", section );
 			switch(section)
@@ -325,46 +334,46 @@ public class DataFile extends AdvGameData
 				case 0:			 //  finished reading database	
 					return;
 				case 1:			 //  long form descriptions	   
-					loadDescriptions(longDescriptionSet);
+					loadDescriptions(reader, longDescriptionSet);
 					break;
 				case 2:			 //  short form descriptions	  
-					loadDescriptions(shortDescriptionSet);
+					loadDescriptions(reader, shortDescriptionSet);
 					break;
 				case 3:			 //  travel table	
-					loadTravelData();
+					loadTravelData(reader);
 					break;
 				case 4:			 //  vocabulary				   
-					loadVocabulary();
+					loadVocabulary(reader);
 					break;
 				case 5:			 //  object descriptions		  
-					loadObjectDescriptions();
+					loadObjectDescriptions(reader);
 					break;
 				case 6:			 //  arbitrary messages		   
-					loadDescriptions(randomDescriptionSet);
+					loadDescriptions(reader, randomDescriptionSet);
 					break;
 				case 7:			 //  object locations			 
-					loadObjectLocations();
+					loadObjectLocations(reader);
 					break;
 				case 8:			 //  action defaults			  
-					loadActionDefaults();
+					loadActionDefaults(reader);
 					break;
 				case 9:			 //  liquid assets				
-					loadLiquidAssets();
+					loadLiquidAssets(reader);
 					break;
 				case 10:			//  class messages			   
-					loadClassMessages();
+					loadClassMessages(reader);
 					break;
 				case 11:			//  hints						
-					loadHints();
+					loadHints(reader);
 					break;
 				case 12:			//  magic messages			   
-					loadDescriptions(magicDescriptionSet);
+					loadDescriptions(reader, magicDescriptionSet);
 					break;
 				default:
 					DP(
 						"Invalid data section number({0}) from line: {1}", 
 						section,
-						_curline
+						curline
 					);
 					break;
 			}
@@ -372,11 +381,11 @@ public class DataFile extends AdvGameData
 	}
 	private final static String SPLIT_PATTERN = "[\\t ]";
 	// ---------------------------------------------------------------------
-	void loadDescriptions(MessageListSet listSet)
+	void loadDescriptions(BufferedReader reader, MessageListSet listSet)
 	{
 		while( true )
 		{
-			String line = AdvIO.getLine(_in);
+			String line = AdvIO.getLine(reader);
 			String parts[] = line.split(SPLIT_PATTERN,2);
 			int listNumber = Integer.valueOf(parts[0]);
 			if(listNumber<0) {
@@ -387,11 +396,11 @@ public class DataFile extends AdvGameData
 		}
 	}
 	// ---------------------------------------------------------------------
-	void loadClassMessages()
+	void loadClassMessages(BufferedReader reader)
 	{
 		while( true )
 		{
-			String line = AdvIO.getLine(_in);
+			String line = AdvIO.getLine(reader);
 			String parts[] = line.split(SPLIT_PATTERN,2);
 			int score = Integer.valueOf(parts[0]);
 			if(score<0) {
@@ -405,14 +414,14 @@ public class DataFile extends AdvGameData
 		}
 	}
 	// ---------------------------------------------------------------------
-	void loadObjectDescriptions()
+	void loadObjectDescriptions(BufferedReader reader)
 	{
 		int outer_msgno = -1;
 		ObjectDescriptors rminfo = null;
 		ArrayList<MsgInfo> list = null;
 		while( true )
 		{
-			String line = AdvIO.getLine(_in);
+			String line = AdvIO.getLine(reader);
 			String parts[] = line.split(SPLIT_PATTERN,2);
 			int listNumber = Integer.valueOf(parts[0]);
 			if(listNumber<0) {
@@ -438,14 +447,14 @@ public class DataFile extends AdvGameData
 		}
 	}
 	// ---------------------------------------------------------------------
-	void loadTravelData()
+	void loadTravelData(BufferedReader reader)
 	{
 		TravList t = null;
 		int entries = 0;
 		int oldloc= -1;
 		while(true)			//  get another line			 
 		{
-			String line = AdvIO.getLine(_in);
+			String line = AdvIO.getLine(reader);
 			String parts[] = line.split(SPLIT_PATTERN);
 			int locc = Integer.valueOf(parts[0]);
 			if(locc == -1) {
@@ -487,7 +496,7 @@ public class DataFile extends AdvGameData
 		}
 	}
 	// ---------------------------------------------------------------------
-	void loadVocabulary()
+	void loadVocabulary(BufferedReader reader)
 	{
 		if( db_dump_travel )
 		{
@@ -497,7 +506,7 @@ public class DataFile extends AdvGameData
 		Integer value = new Integer(2);
 		while( true )
 		{
-			String line = AdvIO.getLine(_in);
+			String line = AdvIO.getLine(reader);
 			String parts[] = line.split(SPLIT_PATTERN);
 			int id = atoi(parts[0]);
 			if( id == -1 )
@@ -527,11 +536,11 @@ public class DataFile extends AdvGameData
 		}
 	}
 	// ---------------------------------------------------------------------
-	void loadObjectLocations()
+	void loadObjectLocations(BufferedReader reader)
 	{
 		while( true )
 		{
-			String line = AdvIO.getLine(_in);
+			String line = AdvIO.getLine(reader);
 			String parts[] = line.split(SPLIT_PATTERN);
 			int objid = atoi(parts[0]);
 			if( objid == -1 )
@@ -551,11 +560,11 @@ public class DataFile extends AdvGameData
 		}
 	}
 	// ---------------------------------------------------------------------
-	void loadActionDefaults()
+	void loadActionDefaults(BufferedReader reader)
 	{
 		while( true )
 		{
-			String line = AdvIO.getLine(_in);
+			String line = AdvIO.getLine(reader);
 			String parts[] = line.split(SPLIT_PATTERN);
 
 			int verbid = atoi(parts[0]);
@@ -569,11 +578,11 @@ public class DataFile extends AdvGameData
 		}
 	}
 	// ---------------------------------------------------------------------
-	void loadLiquidAssets()
+	void loadLiquidAssets(BufferedReader reader)
 	{
 		while( true )
 		{
-			String line = AdvIO.getLine(_in);
+			String line = AdvIO.getLine(reader);
 			String parts[] = line.split(SPLIT_PATTERN);
 			int bitnum = atoi(parts[0]);
 			if( bitnum == -1 )
@@ -593,11 +602,11 @@ public class DataFile extends AdvGameData
 		
 	}
 	// ---------------------------------------------------------------------
-	void loadHints()
+	void loadHints(BufferedReader reader)
 	{
 		while( true )
 		{
-			String line = AdvIO.getLine(_in);
+			String line = AdvIO.getLine(reader);
 			String parts[] = line.split(SPLIT_PATTERN);
 			int hintnum = atoi(parts[0]);
 			if( hintnum == -1 )
@@ -722,10 +731,6 @@ public class DataFile extends AdvGameData
 		printf("[DataFile] " + msg);
 	}
 	// ---------------------------------------------------------------------
-	private String _curline;
-	private int _curindex;
-	private int _curlength;
-	private ArrayList<String> _strings = new ArrayList<String>();
 	private MessageListSet longDescriptionSet = new MessageListSet();
 	private MessageListSet shortDescriptionSet = new MessageListSet();
 	private MessageListSet randomDescriptionSet = new MessageListSet();

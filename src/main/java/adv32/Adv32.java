@@ -61,6 +61,12 @@ public class Adv32 extends Wizard
 	private final static int L_PROMPT_SPK=2011;
 	private final static int L_NEXT_MOVE=2012;
 	private final static int L_USER_INPUT=2600;
+	private final static int L_PARSE_USER_INPUT=2608;
+	private final static int L_PROCESS_USER_INPUT=2609;
+
+	private final static int L_ASK_WHAT_OBJ=8000;
+	private final static int L_TRY_KILL=9120;
+	private final static int L_TRY_KILL_RESPONSE=9122;
 
 	private void processCommandLine(String[] args) {
 		String path = null;
@@ -82,34 +88,76 @@ public class Adv32 extends Wizard
 		this.doGame( path );
 	}
 	
-    private void doGame( String path )
-    {
-		MessageList temp_mlist = null;
-		int next_label = L_NEWGAME;
+    private void doGame( String path ) {
 
 		init();
-	
-		if( path != null )	//  Restore file specified 
+
+		int initialLabel = L_NEWGAME;
+		if (path != null)    //  Restore file specified
 		{
-			int restoreChoice = restore(path);	//  See what we've got
-			switch(restoreChoice)
-			{
-			case 0:	 			//  The restore worked fine 
-				yea = Start(0);
-				k=0;
-				unlink(path);	//  Don't re-use the save 
-				next_label = L_RESTORED;	//  Get where we're going 
-			case 1:				//  Couldn't open it 
-				exit(0);		//  So give up 
-			case 2:				//  Oops -- file was altered 
-				rspeak(202);	//  You dissolve 
-				exit(0);		//  File could be non-adventure 
-			}					//  So don't unlink it. 
-		}
-		else
-		{
+			int restoreChoice = restore(path);    //  See what we've got
+			switch (restoreChoice) {
+				case 0:                //  The restore worked fine
+					yea = Start(0);
+					k = 0;
+					unlink(path);    //  Don't re-use the save
+					initialLabel = L_RESTORED;    //  Get where we're going
+				case 1:                //  Couldn't open it
+					exit(0);        //  So give up
+				case 2:                //  Oops -- file was altered
+					rspeak(202);    //  You dissolve
+					exit(0);        //  File could be non-adventure
+			}                    //  So don't unlink it.
+		} else {
 			startup();
 		}
+		CrankInput input = new CrankInput(initialLabel, null);
+		while(true) {
+			CrankOutput output = turnTheCrank(input);
+			switch(output.type) {
+				case exit: return;
+				case getInput:
+				{
+					String line = AdvIO.getInputLine();
+
+//					if (delhit > 0)		//  user typed a DEL
+//					{
+//						delhit=0;		//  reset counter
+//						wd1= "quit";
+//						wd2 = null;
+//					}
+					input = new CrankInput(output.reentryPoint, line);
+				}
+			}
+		}
+	}
+
+	static class CrankOutput {
+		public CrankOutput(Type type, int reentryPoint) {
+			this.type = type;
+			this.reentryPoint = reentryPoint;
+		}
+
+		enum Type {
+			getInput,
+			exit
+		}
+		Type type;
+		int reentryPoint;
+	}
+
+	static class CrankInput {
+		public CrankInput(int entryPoint, String userInput) {
+			this.entryPoint = entryPoint;
+			this.userInput = userInput;
+		}
+		int entryPoint;
+		String userInput;
+	}
+
+	public CrankOutput turnTheCrank(CrankInput crankInput) {
+		MessageList temp_mlist = null;
+		int next_label = crankInput.entryPoint;
 		// Main Execution Loop
 		for (;;)                        //  main command loop (label 2)  
 		{
@@ -117,12 +165,12 @@ public class Adv32 extends Wizard
 			switch(next_label)
 			{
 			case L_NEWGAME:
-				if (newloc<9 && newloc!=0 && closng)
+				if (newloc<9 && newloc!=0 && isClosing)
 				{       
 					rspeak(130);    //  if closing leave only by     
 					newloc=loc;     //       main office             
 					if (!panic) clock2=15;
-					panic=TRUE;
+					panic=true;
 				}
 
 			{
@@ -152,7 +200,7 @@ public class Adv32 extends Wizard
 				k=1;
 				if (forced(loc))
 					{next_label=8; continue;}
-				if (loc==33 && pct(25)&&!closng) rspeak(8);
+				if (loc==33 && pct(25)&&!isClosing) rspeak(8);
 				// FLATTEN
 				//if (!dark(0))
 				// {
@@ -167,7 +215,7 @@ public class Adv32 extends Wizard
 						continue;
 					if (prop[obj]<0)
 					{       
-						if (closed)
+						if (isClosed)
 							continue;
 						prop[obj]=0;
 						if (obj==rug||obj==chain)
@@ -197,7 +245,7 @@ public class Adv32 extends Wizard
 				obj=0;
 			case L_USER_INPUT:
 				checkhints();                   //  to 2600-2602         
-				if (closed)
+				if (isClosed)
 				{       
 					if (prop[oyster]<0 && toting(oyster))
 						pspeak(oyster,1);
@@ -209,16 +257,15 @@ public class Adv32 extends Wizard
 				}
 				wzdark=dark(0);                 //  2605                 
 				if (knfloc>0 && knfloc!=loc) knfloc=1;
-				DP("GETIN @loc({0})", loc);
-				getin();
-				if (delhit > 0)		//  user typed a DEL     
-				{       
-					delhit=0;		//  reset counter
-					wd1= "quit";
-					wd2 = null;
-				}
-			case 2608:
-				if ((foobar = -foobar)>0) foobar=0;     //  2608         
+				return new CrankOutput(CrankOutput.Type.getInput, L_PARSE_USER_INPUT);
+//				DP("GETIN @loc({0})", loc);
+//				getin();
+
+			case L_PARSE_USER_INPUT:
+				parseUserInputLine(crankInput.userInput);
+				// Fall Through ...
+			case L_PROCESS_USER_INPUT:
+					if ((foobar = -foobar)>0) foobar=0;     //  2608
 				//  should check here for "magic mode"                   
 				turns++;
 				if (demo && turns>=TURNS_IN_A_DEMO_GAME) done(1);      //  to 13000     
@@ -245,7 +292,7 @@ public class Adv32 extends Wizard
 					prop[batter]=1;
 					if (toting(batter)) drop(batter,loc);
 					limit=limit+2500;
-					lmwarn=FALSE;
+					lmwarn=false;
 					{next_label=19999; continue;}
 				}
 				if (limit==0)
@@ -258,13 +305,13 @@ public class Adv32 extends Wizard
 				if (limit<0&&loc<=8)
 				{       
 					rspeak(185);            //  12600                
-					gaveup=TRUE;
+					gaveup=true;
 					done(2);                //  to 20000             
 				}
 				if (limit<=30)
 				{   
 					if (lmwarn|| !here(lamp)) {next_label=19999; continue;}  // 12200
-					lmwarn=TRUE;
+					lmwarn=true;
 					spk=187;
 					if (place[batter]==0) spk=183;
 					if (prop[batter]==1) spk=189;
@@ -354,37 +401,37 @@ public class Adv32 extends Wizard
 				switch(verb)
 				{   case 1:                     //  take = 8010          
 						if (atloc[loc]==0 || link[atloc[loc]] != 0)
-							{next_label=8000; continue;}
+							{next_label=L_ASK_WHAT_OBJ; continue;}
 						for (int temp_i=1; temp_i<=5; temp_i++)
 						{
 							if (dwarfLoc[temp_i]==loc&&dflag>=2)
-								{next_label=8000; continue;}
+								{next_label=L_ASK_WHAT_OBJ; continue;}
 						}
 						obj=atloc[loc];
 						{next_label=9010; continue;}
-					case 2: case 3: case 9:     //  8000 : drop,say,wave 
+					case 2: case 3: case 9:     //  L_ASK_WHAT_OBJ : drop,say,wave
 					case 10: case 16: case 17:  //  calm,rub,toss        
 					case 19: case 21: case 28:  //  find,feed,break      
 					case 29:                    //  wake                 
-						{next_label=8000; continue;}
+						{next_label=L_ASK_WHAT_OBJ; continue;}
 					case 4: case 6:             //  8040 open,lock       
 						spk=28;
 						if (here(clam)) obj=clam;
 						if (here(oyster)) obj=oyster;
 						if (at(door)) obj=door;
 						if (at(grate)) obj=grate;
-						if (obj!=0 && here(chain)) {next_label=8000; continue;}
+						if (obj!=0 && here(chain)) {next_label=L_ASK_WHAT_OBJ; continue;}
 						if (here(chain)) obj=chain;
 						if (obj==0) {next_label=L_PROMPT_SPK; continue;}
 						{next_label=9040; continue;}
 					case 5: {next_label=L_PROMPT_OK; continue;}         //  nothing              
 					case 7: {next_label=9070; continue;}         //  on                   
 					case 8: {next_label=9080; continue;}         //  off                  
-					case 11: {next_label=8000; continue;}        //  walk                 
-					case 12: {next_label=9120; continue;}        //  kill                 
+					case 11: {next_label=L_ASK_WHAT_OBJ; continue;}        //  walk
+					case 12: {next_label=L_TRY_KILL; continue;}        //  kill
 					case 13: {next_label=9130; continue;}        //  pour                 
 					case 14:                    //  eat: 8140            
-						if (!here(food)) {next_label=8000; continue;}
+						if (!here(food)) {next_label=L_ASK_WHAT_OBJ; continue;}
 						{next_label=8142; continue;}
 					case 15: {next_label=9150; continue;}        //  drink                
 					case 18:                    //  quit: 8180           
@@ -396,9 +443,9 @@ public class Adv32 extends Wizard
 						for (int objid=1; objid<=LAST_OBJECT_INDEX; objid++)
 						{       if (objid!=bear && toting(objid))
 							{       if (spk==98) rspeak(99);
-								blklin=FALSE;
+								blklin=false;
 								pspeak(objid,-1);
-								blklin=TRUE;
+								blklin=true;
 								spk=0;
 							}
 						}
@@ -407,14 +454,14 @@ public class Adv32 extends Wizard
 					case 22: {next_label=9220; continue;}        //  fill                 
 					case 23: {next_label=9230; continue;}        //  blast                
 					case 24:                    //  score: 8240          
-						scorng=TRUE;
+						isScoring =true;
 						printf(
 							"If you were to quit now, you would score {0} out"
 							+" of a possible {1}",
 							score(),
 							mxscor
 						);
-						scorng=FALSE;
+						isScoring =false;
 						gaveup=yes(143,54,54);
 						if (gaveup) done(2);
 						{next_label=L_NEXT_MOVE; continue;}
@@ -433,10 +480,10 @@ public class Adv32 extends Wizard
 						if (here(magzin)) obj=magzin;
 						if (here(tablet)) obj=obj*100+tablet;
 						if (here(messag)) obj=obj*100+messag;
-						if (closed&&toting(oyster)) obj=oyster;
+						if (isClosed &&toting(oyster)) obj=oyster;
 						if (obj>FIXED_OBJECT_OFFSET || obj==0 || dark(0) )
 						{
-							{next_label=8000; continue;}
+							{next_label=L_ASK_WHAT_OBJ; continue;}
 						}
 						{next_label=9270; continue;}
 					case 30:                    //  suspend=8300         
@@ -453,17 +500,18 @@ public class Adv32 extends Wizard
 						);
 						if (!yes(200,54,54)) {next_label=L_NEXT_MOVE; continue;}
 						saved_last_usage = datime();
-						ciao(path);	          //  Do we quit? 
+						// TODO: What do we do here????
+//						ciao(path);	          //  Do we quit?
 						{next_label=2; continue;} //  Maybe not
 					case 31:                    //  hours=8310           
 						printf(
-							"Colossal cave is closed 9am-5pm Mon through "
+							"Colossal cave is isClosed 9am-5pm Mon through "
 							+"Fri except holidays."
 						);
 						{next_label=L_NEXT_MOVE; continue;}
 					default: bug(23);
 				}
-			case 8000:
+			case L_ASK_WHAT_OBJ:
 				printf("{0} what?",wd1);
 				obj=0;
 				{next_label=L_USER_INPUT; continue;}
@@ -573,25 +621,98 @@ public class Adv32 extends Wizard
 				{next_label=L_NEXT_MOVE; continue;}
 		
 			case 9090:	//  wave                 
+			{
 				if ((!toting(obj))&&(obj!=rod||!toting(rod2)))
-					spk=29;
-				if (obj!=rod||!at(fissur)||!toting(obj)||closng)
+									spk=29;
+				if (obj!=rod||!at(fissur)||!toting(obj)|| isClosing)
 					{next_label=L_PROMPT_SPK; continue;}
 				prop[fissur]=1-prop[fissur];
 				pspeak(fissur,2-prop[fissur]);
 				{next_label=L_NEXT_MOVE; continue;}
-			case 9120:	//  kill
-				switch(trkill())
-				{   case 8000: {next_label=8000; continue;}
-					case 8: {next_label=8; continue;}
-					case L_PROMPT_SPK: {next_label=L_PROMPT_SPK; continue;}
-					case 2608: {next_label=2608; continue;}
-					case 19000: done(3);
-					default: bug(112);
+			}
+			case L_TRY_KILL:	//  kill
+			{
+				int dwarfid;
+				for (dwarfid = 1; dwarfid <= 5; dwarfid++)
+					if (dwarfLoc[dwarfid] == loc && dflag >= 2) break;
+				if (dwarfid == 6) dwarfid = 0;
+				if (obj == 0)                     //  9122
+				{
+					if (dwarfid != 0) obj = dwarf;
+					if (here(snake)) obj = obj * 100 + snake;
+					if (at(dragon) && prop[dragon] == 0) obj = obj * 100 + dragon;
+					if (at(troll)) obj = obj * 100 + troll;
+					if (here(bear) && prop[bear] == 0) obj = obj * 100 + bear;
+					if (obj > FIXED_OBJECT_OFFSET) {
+						next_label = L_ASK_WHAT_OBJ;
+						continue;
+					}
+					if (obj == 0) {
+						if (here(bird) && verb != vthrow) obj = bird;
+						if (here(clam) || here(oyster)) obj = 100 * obj + clam;
+						if (obj > 100) {
+							next_label = L_ASK_WHAT_OBJ;
+							continue;
+						}
+					}
 				}
+				if (obj == bird)                  //  9124
+				{
+					spk = 137;
+					if (isClosed) {
+						next_label = L_PROMPT_SPK;
+						continue;
+					}
+					dstroy(bird);
+					prop[bird] = 0;
+					if (place[snake] == plac[snake]) tally2++;
+					spk = 45;
+				}
+				if (obj == 0) spk = 44;             //  9125
+				if (obj == clam || obj == oyster) spk = 150;
+				if (obj == snake) spk = 46;
+				if (obj == dwarf) spk = 49;
+				if (obj == dwarf && isClosed) {
+					next_label = 19000;
+					continue;
+				}
+				if (obj == dragon) spk = 147;
+				if (obj == troll) spk = 157;
+				if (obj == bear) spk = 165 + (prop[bear] + 1) / 2;
+				if (obj != dragon || prop[dragon] != 0) {
+					next_label = L_PROMPT_SPK;
+					continue;
+				}
+				rspeak(49);
+				verb = 0;
+				obj = 0;
+//				DP("GETIN @loc({0})", loc);
+//				getin();
+				return new CrankOutput(CrankOutput.Type.getInput, L_TRY_KILL_RESPONSE);
+			}
+			case L_TRY_KILL_RESPONSE: {
+				parseUserInputLine(crankInput.userInput);
+
+				if (!weq(wd1,"y")&&!weq(wd1,"yes")) {next_label=L_PROCESS_USER_INPUT; continue;}
+				pspeak(dragon,1);
+				prop[dragon]=2;
+				prop[rug]=0;
+				k=(plac[dragon]+fixd[dragon])/2;
+				move(dragon+FIXED_OBJECT_OFFSET,-1);
+				move(rug+FIXED_OBJECT_OFFSET,0);
+				move(dragon,k);
+				move(rug,k);
+				for (obj=1; obj<=LAST_OBJECT_INDEX; obj++)
+					if (place[obj]==plac[dragon]||place[obj]==fixd[dragon])
+						move(obj,k);
+				loc=k;
+				k=0;
+				{next_label=8; continue;}
+			}
+
 			case 9130:	//  pour
 				if (obj==bottle||obj==0) obj=liq(0);
-				if (obj==0) {next_label=8000; continue;}
+				if (obj==0) {next_label=L_ASK_WHAT_OBJ; continue;}
 				if (!toting(obj)) {next_label=L_PROMPT_SPK; continue;}
 				spk=78;
 				if (obj!=oil&&obj!=water) {next_label=L_PROMPT_SPK; continue;}
@@ -620,7 +741,7 @@ public class Adv32 extends Wizard
 				{next_label=L_PROMPT_SPK; continue;}
 			case 9150:	//  9150 - drink
 				if (obj==0&&liqloc(loc)!=water&&(liq(0)!=water
-					||!here(bottle))) {next_label=8000; continue;}
+					||!here(bottle))) {next_label=L_ASK_WHAT_OBJ; continue;}
 				if (obj!=0&&obj!=water) spk=110;
 				if (spk==110||liq(0)!=water||!here(bottle))
 					{next_label=L_PROMPT_SPK; continue;}
@@ -636,7 +757,7 @@ public class Adv32 extends Wizard
 				{   
 					case L_PROMPT_SPK: {next_label=L_PROMPT_SPK; continue;}
 					case 9020: {next_label=9020; continue;}
-					case 9120: {next_label=9120; continue;}
+					case L_TRY_KILL: {next_label=L_TRY_KILL; continue;}
 					case 8: {next_label=8; continue;}
 					case 9210: {next_label=9210; continue;}
 					default: bug(113);
@@ -648,7 +769,7 @@ public class Adv32 extends Wizard
 				for (int temp_i=1; temp_i<=5; temp_i++) {
 					if (dwarfLoc[temp_i]==loc&&dflag>=2&&obj==dwarf) spk=94;
 				}
-				if (closed) spk=138;
+				if (isClosed) spk=138;
 				if (toting(obj)) spk=24;
 				{next_label=L_PROMPT_SPK; continue;}
 			case 9210:	//  feed
@@ -659,12 +780,12 @@ public class Adv32 extends Wizard
 			case 9220:	//  fill
 				switch(trfill())
 				{   case L_PROMPT_SPK: {next_label=L_PROMPT_SPK; continue;}
-					case 8000: {next_label=8000; continue;}
+					case L_ASK_WHAT_OBJ: {next_label=L_ASK_WHAT_OBJ; continue;}
 					case 9020: {next_label=9020; continue;}
 					default: bug(115);
 				}
 			case 9230:	//  blast
-				if (prop[rod2]<0||!closed) {next_label=L_PROMPT_SPK; continue;}
+				if (prop[rod2]<0||!isClosed) {next_label=L_PROMPT_SPK; continue;}
 				bonus=133;
 				if (loc==115) bonus=134;
 				if (here(rod2)) bonus=135;
@@ -677,7 +798,7 @@ public class Adv32 extends Wizard
 				if (obj==messag) spk=191;
 				if (obj==oyster&&hinted[2]&&toting(oyster)) spk=194;
 				if (obj!=oyster||hinted[2]||!toting(oyster)
-					||!closed) {next_label=L_PROMPT_SPK; continue;}
+					||!isClosed) {next_label=L_PROMPT_SPK; continue;}
 				hinted[2]=yes(192,193,54);
 				{next_label=L_NEXT_MOVE; continue;}
 			case 9280:	//  break
@@ -689,12 +810,12 @@ public class Adv32 extends Wizard
 					fixed[vase]= -1;
 					{next_label=L_PROMPT_SPK; continue;}
 				}
-				if (obj!=mirror||!closed) {next_label=L_PROMPT_SPK; continue;}
+				if (obj!=mirror||!isClosed) {next_label=L_PROMPT_SPK; continue;}
 				rspeak(197);
 				done(3);
 		
 			case 9290:	//  wake
-				if (obj!=dwarf||!closed) {next_label=L_PROMPT_SPK; continue;}
+				if (obj!=dwarf||!isClosed) {next_label=L_PROMPT_SPK; continue;}
 				rspeak(199);
 				done(3);
 		
@@ -807,8 +928,8 @@ public class Adv32 extends Wizard
 	// ---------------------------------------------------------------------
 	boolean pct(int n)
 	{       
-		if (ran(100)<n) return(TRUE);
-		return(FALSE);
+		if (ran(100)<n) return(true);
+		return(false);
 	}
 	// ---------------------------------------------------------------------
 	int fdwarf()		//  71 
@@ -817,7 +938,7 @@ public class Adv32 extends Wizard
 		{	
 			for (int i=1; i<=5; i++)
 			{	
-				if (odloc[i]!=newloc || !dseen[i])
+				if (odloc[i]!=newloc || !dwarfSeenAtLoc[i])
 					continue;
 				newloc=loc;
 				rspeak(2);
@@ -877,8 +998,8 @@ public class Adv32 extends Wizard
 			newdwarfid=1+ran(newdwarfid);
 			odloc[dwarfid]= dwarfLoc[dwarfid];
 			dwarfLoc[dwarfid]=tk[newdwarfid];
-			dseen[dwarfid]=(dseen[dwarfid]&&loc>=15)||(dwarfLoc[dwarfid]==loc||odloc[dwarfid]==loc);
-			if (!dseen[dwarfid]) continue;        /* i.e. goto 6030 */
+			dwarfSeenAtLoc[dwarfid]=(dwarfSeenAtLoc[dwarfid]&&loc>=15)||(dwarfLoc[dwarfid]==loc||odloc[dwarfid]==loc);
+			if (!dwarfSeenAtLoc[dwarfid]) continue;        /* i.e. goto 6030 */
 			dwarfLoc[dwarfid]=loc;
 			if (dwarfid==6)                       /* pirate's spotted him */
 			{
@@ -924,7 +1045,7 @@ public class Adv32 extends Wizard
 						}
 					case 4: // l6024:  
 						dwarfLoc[6]=odloc[6]=chloc;
-						dseen[6]=FALSE;
+						dwarfSeenAtLoc[6]=false;
 						break;
 					case 5: // l6025:  
 						rspeak(186);
@@ -994,7 +1115,7 @@ public class Adv32 extends Wizard
 		if (k==look)                            //  30                   
 		{       
 			if (detail++<3) rspeak(15);
-			wzdark=FALSE;
+			wzdark=false;
 			abb[loc]=0;
 			return(2);
 		}
@@ -1334,7 +1455,7 @@ public class Adv32 extends Wizard
 		if (obj==bird&&here(snake))
 		{       
 			rspeak(30);
-			if (closed) return(19000);
+			if (isClosed) return(19000);
 			dstroy(snake);
 			prop[snake]=1;
 			return(dropper());
@@ -1422,11 +1543,11 @@ public class Adv32 extends Wizard
 			fixed[bear]=2-prop[bear];
 			return(L_PROMPT_SPK);
 		}
-		if (closng)
+		if (isClosing)
 		{       
 			k=130;
 			if (!panic) clock2=15;
-			panic=TRUE;
+			panic=true;
 			return(L_PROMPT_K);
 		}
 		k=34+prop[grate];                       //  9043                 
@@ -1435,67 +1556,68 @@ public class Adv32 extends Wizard
 		k=k+2*prop[grate];
 		return(L_PROMPT_K);
 	}
-	// ---------------------------------------------------------------------
-	int trkill()                                //  9120                         
-	{       
-		int i;
-		for (i=1; i<=5; i++)
-			if (dwarfLoc[i]==loc&&dflag>=2) break;
-		if (i==6) i=0;
-		if (obj==0)                     //  9122                         
-		{       
-			if (i!=0) obj=dwarf;
-			if (here(snake)) obj=obj*100+snake;
-			if (at(dragon)&&prop[dragon]==0) obj=obj*100+dragon;
-			if (at(troll)) obj=obj*100+troll;
-			if (here(bear)&&prop[bear]==0) obj=obj*100+bear;
-			if (obj>FIXED_OBJECT_OFFSET) return(8000);
-			if (obj==0)
-			{       if (here(bird)&&verb!=vthrow) obj=bird;
-				if (here(clam)||here(oyster)) obj=100*obj+clam;
-				if (obj>100) return(8000);
-			}
-		}
-		if (obj==bird)                  //  9124                         
-		{       
-			spk=137;
-			if (closed) return(L_PROMPT_SPK);
-			dstroy(bird);
-			prop[bird]=0;
-			if (place[snake]==plac[snake]) tally2++;
-			spk=45;
-		}
-		if (obj==0) spk=44;             //  9125                         
-		if (obj==clam||obj==oyster) spk=150;
-		if (obj==snake) spk=46;
-		if (obj==dwarf) spk=49;
-		if (obj==dwarf&&closed) return(19000);
-		if (obj==dragon) spk=147;
-		if (obj==troll) spk=157;
-		if (obj==bear) spk=165+(prop[bear]+1)/2;
-		if (obj!=dragon||prop[dragon]!=0) return(L_PROMPT_SPK);
-		rspeak(49);
-		verb=0;
-		obj=0;
-		
-		DP("GETIN @loc({0})", loc);
-		getin();
-		if (!weq(wd1,"y")&&!weq(wd1,"yes")) return(2608);
-		pspeak(dragon,1);
-		prop[dragon]=2;
-		prop[rug]=0;
-		k=(plac[dragon]+fixd[dragon])/2;
-		move(dragon+FIXED_OBJECT_OFFSET,-1);
-		move(rug+FIXED_OBJECT_OFFSET,0);
-		move(dragon,k);
-		move(rug,k);
-		for (obj=1; obj<=LAST_OBJECT_INDEX; obj++)
-			if (place[obj]==plac[dragon]||place[obj]==fixd[dragon])
-				move(obj,k);
-		loc=k;
-		k=0;
-		return(8);
-	}
+//	// ---------------------------------------------------------------------
+//	int trkill()                                //  L_TRY_KILL
+//	{
+//		int dwarfid;
+//		for (dwarfid=1; dwarfid<=5; dwarfid++)
+//			if (dwarfLoc[dwarfid]==loc&&dflag>=2) break;
+//		if (dwarfid==6) dwarfid=0;
+//		if (obj==0)                     //  9122
+//		{
+//			if (dwarfid!=0) obj=dwarf;
+//			if (here(snake)) obj=obj*100+snake;
+//			if (at(dragon)&&prop[dragon]==0) obj=obj*100+dragon;
+//			if (at(troll)) obj=obj*100+troll;
+//			if (here(bear)&&prop[bear]==0) obj=obj*100+bear;
+//			if (obj>FIXED_OBJECT_OFFSET) return(L_ASK_WHAT_OBJ);
+//			if (obj==0)
+//			{       if (here(bird)&&verb!=vthrow) obj=bird;
+//				if (here(clam)||here(oyster)) obj=100*obj+clam;
+//				if (obj>100) return(L_ASK_WHAT_OBJ);
+//			}
+//		}
+//		if (obj==bird)                  //  9124
+//		{
+//			spk=137;
+//			if (isClosed) return(L_PROMPT_SPK);
+//			dstroy(bird);
+//			prop[bird]=0;
+//			if (place[snake]==plac[snake]) tally2++;
+//			spk=45;
+//		}
+//		if (obj==0) spk=44;             //  9125
+//		if (obj==clam||obj==oyster) spk=150;
+//		if (obj==snake) spk=46;
+//		if (obj==dwarf) spk=49;
+//		if (obj==dwarf&& isClosed) return(19000);
+//		if (obj==dragon) spk=147;
+//		if (obj==troll) spk=157;
+//		if (obj==bear) spk=165+(prop[bear]+1)/2;
+//		if (obj!=dragon||prop[dragon]!=0) return(L_PROMPT_SPK);
+//		rspeak(49);
+//		verb=0;
+//		obj=0;
+//
+//		DP("GETIN @loc({0})", loc);
+//		getin();
+//		if (!weq(wd1,"y")&&!weq(wd1,"yes")) return(L_PROCESS_USER_INPUT);
+//		pspeak(dragon,1);
+//		prop[dragon]=2;
+//		prop[rug]=0;
+//		k=(plac[dragon]+fixd[dragon])/2;
+//		move(dragon+FIXED_OBJECT_OFFSET,-1);
+//		move(rug+FIXED_OBJECT_OFFSET,0);
+//		move(dragon,k);
+//		move(rug,k);
+//		for (obj=1; obj<=LAST_OBJECT_INDEX; obj++)
+//			if (place[obj]==plac[dragon]||place[obj]==fixd[dragon])
+//				move(obj,k);
+//		loc=k;
+//		k=0;
+//		return(8);
+//	}
+
 	// ---------------------------------------------------------------------
 	int trtoss_exit( int spk, int axe, int loc )
 	{
@@ -1505,7 +1627,9 @@ public class Adv32 extends Wizard
 		k=0;
 		return(8);
 	}
-	int trtoss()                                //  9170: throw                  
+
+	// ---------------------------------------------------------------------
+	int trtoss()                                //  9170: throw
 	{   
 		int i;
 		if (toting(rod2)&&obj==rod&&!toting(rod)) obj=rod2;
@@ -1534,7 +1658,7 @@ public class Adv32 extends Wizard
 				spk=48;                 //  9172                 
 				if (ran(3)==0||saved!= -1)
 					return trtoss_exit( spk, axe,loc );
-				dseen[i]=FALSE;
+				dwarfSeenAtLoc[i]=false;
 				dwarfLoc[i]=0;
 				spk=47;
 				dkill++;
@@ -1561,8 +1685,9 @@ public class Adv32 extends Wizard
 			return(L_PROMPT_SPK);
 		}
 		obj=0;
-		return(9120);
+		return(L_TRY_KILL);
 	}
+
 	// ---------------------------------------------------------------------
 	int trfeed()                                        //  9210                 
 	{       
@@ -1576,7 +1701,7 @@ public class Adv32 extends Wizard
 			spk=102;
 			if (obj==dragon&&prop[dragon]!=0) spk=110;
 			if (obj==troll) spk=182;
-			if (obj!=snake||closed||!here(bird)) return(L_PROMPT_SPK);
+			if (obj!=snake|| isClosed ||!here(bird)) return(L_PROMPT_SPK);
 			spk=101;
 			dstroy(bird);
 			prop[bird]=0;
@@ -1605,6 +1730,7 @@ public class Adv32 extends Wizard
 		spk=14;
 		return(L_PROMPT_SPK);
 	}
+
 	// ---------------------------------------------------------------------
 	int trfill()                                        //  9220 
 	{       
@@ -1619,7 +1745,7 @@ public class Adv32 extends Wizard
 			return(9020);           //  advent/10 goes to 9024 
 		}
 		if (obj!=0&&obj!=bottle) return(L_PROMPT_SPK);
-		if (obj==0&&!here(bottle)) return(8000);
+		if (obj==0&&!here(bottle)) return(L_ASK_WHAT_OBJ);
 		spk=107;
 		if (liqloc(loc)==0) spk=106;
 		if (liq(0)!=0) spk=105;
@@ -1630,6 +1756,7 @@ public class Adv32 extends Wizard
 		if (k==oil) spk=108;
 		return(L_PROMPT_SPK);
 	}
+
 	// ---------------------------------------------------------------------
 	int closing()                               //  10000 
 	{       
@@ -1638,7 +1765,7 @@ public class Adv32 extends Wizard
 		prop[grate]=prop[fissur]=0;
 		for (i=1; i<=6; i++)
 		{       
-			dseen[i]=FALSE;
+			dwarfSeenAtLoc[i]=false;
 			dwarfLoc[i]=0;
 		}
 		move(troll,0);
@@ -1653,9 +1780,10 @@ public class Adv32 extends Wizard
 		fixed[axe]=0;
 		rspeak(129);
 		clock1 = -1;
-		closng=TRUE;
+		isClosing = true;
 		return(19999);
 	}
+
 	// ---------------------------------------------------------------------
 	int caveclose()                             //  11000 
 	{       
@@ -1683,9 +1811,10 @@ public class Adv32 extends Wizard
 		for (i=1; i<=FIXED_OBJECT_OFFSET; i++)
 			if (toting(i)) dstroy(i);
 		rspeak(132);
-		closed=TRUE;
+		isClosed = true;
 		return(2);
-	}	
+	}
+
 	// ---------------------------------------------------------------------
 	int score()   //  sort of like 20000   
 	{       
@@ -1703,13 +1832,13 @@ public class Adv32 extends Wizard
 		}
 		scor += (maxdie-numdie)*10;
 		mxscor += maxdie*10;
-		if (!(scorng||gaveup)) scor += 4;
+		if (!(isScoring ||gaveup)) scor += 4;
 		mxscor += 4;
 		if (dflag!=0) scor += 25;
 		mxscor += 25;
-		if (closng) scor += 25;
+		if (isClosing) scor += 25;
 		mxscor += 25;
-		if (closed)
+		if (isClosed)
 		{       if (bonus==0) scor += 10;
 			if (bonus==135) scor += 25;
 			if (bonus==134) scor += 30;
@@ -1724,6 +1853,7 @@ public class Adv32 extends Wizard
 			if (hinted[i]) scor -= getHint(i, 2);
 		return(scor);
 	}
+
 	// ---------------------------------------------------------------------
 	//  entry=1 means goto 13000 */  /* game is over         
 	//  entry=2 means goto 20000 */ /* 3=19000 
@@ -1768,16 +1898,18 @@ public class Adv32 extends Wizard
 		}
 		exit(0);
 	}
+
 	// ---------------------------------------------------------------------
 	//  label 90             
 	int die(int entry)
 	{
 		int i;
 		if (entry != 99)
-		{       rspeak(23);
+		{
+			rspeak(23);
 			oldlc2=loc;
 		}
-		if (closng)                             //  99                   
+		if (isClosing)                             //  99
 		{
 			rspeak(131);
 			numdie++;
@@ -1798,7 +1930,8 @@ public class Adv32 extends Wizard
 		loc=3;
 		oldloc=loc;
 		return(2000);
-	}	
+	}
+
 	// ======================================================================
 	// Stuff from vocab.c
 	// ======================================================================
@@ -1999,7 +2132,7 @@ public class Adv32 extends Wizard
 		chloc2=140;
 		for (i=1; i<=6; i++)
 		{
-			dseen[i]=false;
+			dwarfSeenAtLoc[i]=false;
 		}
 		dflag=0;
 		dwarfLoc[1]=19;
@@ -2028,14 +2161,18 @@ public class Adv32 extends Wizard
 		clock1=30;
 		clock2=50;
 		saved_last_usage=0;
-		closng=panic=closed=scorng=false;
+		isClosing =panic= isClosed = isScoring =false;
 	}
 	// ---------------------------------------------------------------------
-	private void getin()
+	private void parseUserInputLine(String line)
 	{
-		AdvIO.getin(words);
-		wd1 = words[0];
-		wd2 = words[1];
+		String[] parts = line.split("\\s+", 2);
+		switch(parts.length) {
+			case 0: wd1 = ""; wd2 = null; break;
+			case 1: wd1 = parts[0]; wd2 = null; break;
+			case 2: wd1 = parts[0]; wd2 = parts[1]; break;
+		}
+//		System.out.println("Wd1: "+wd1+", wd2: " + wd2);
 	}
 	// ---------------------------------------------------------------------
     private boolean weq(String a, String b)

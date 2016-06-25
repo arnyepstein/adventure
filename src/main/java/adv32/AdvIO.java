@@ -39,9 +39,11 @@
  */
 package adv32;
 
-import java.io.*;
-import java.text.MessageFormat;
-import java.util.*;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.util.Date;
+import java.util.Random;
 
 public class AdvIO extends DataFile
 {
@@ -67,6 +69,7 @@ public class AdvIO extends DataFile
 	// ---------------------------------------------------------------------
 	public static String getAnyLine(BufferedReader in)
 	{
+		// Returns a non-blank line, or throws on EOF
 		while( true )
 		{
 			String line = null;
@@ -101,7 +104,7 @@ public class AdvIO extends DataFile
 		return ch;
 	}
 	// ---------------------------------------------------------------------
-	private static String _getInputLine()
+	public static String getInputLine()
 	{
 		return getLine(_reader);
 	}
@@ -109,7 +112,7 @@ public class AdvIO extends DataFile
 	private static char _getInputChar()
 	{
 		char ch = 0;
-		String line = _getInputLine();
+		String line = getInputLine();
 		if( line.length() > 0 )
 		{
 			ch = line.charAt(0);
@@ -122,7 +125,7 @@ public class AdvIO extends DataFile
     {	   
 		while(true)
 		{	 
-			String line = _getInputLine();
+			String line = getInputLine();
 
 			words[0] = words[1] = null;
 			int index_of_space = line.indexOf(' ');
@@ -154,10 +157,10 @@ public class AdvIO extends DataFile
 			break;
 		}
 
-//		if( words[0] != null )
-//			System.out.println("Word1: " + words[0]);
-//		if( words[1] != null )
-//			System.out.println("Word2: " + words[1]);
+//		if( tempwords[0] != null )
+//			System.out.println("Word1: " + tempwords[0]);
+//		if( tempwords[1] != null )
+//			System.out.println("Word2: " + tempwords[1]);
     }
 
 	// ---------------------------------------------------------------------
