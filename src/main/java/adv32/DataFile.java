@@ -176,16 +176,21 @@ public class DataFile extends AdvGameData
 		_speak(longDescriptionSet, msg_id );
 	}
 	// ---------------------------------------------------------------------
-	public void pspeak( int msg_id, int skip )
+	public void pspeak( int propid, int msgid )
 	{
-		_speak( objectDescriptorsList.get(msg_id).messageSet, skip );
+		ObjectDescriptors descriptor = objectDescriptorsList.get(propid);
+		if(msgid == -1) {
+			emitOutputToUser( descriptor.description_string );
+		} else {
+			_speak(descriptor.messageSet, msgid);
+		}
 	}
 	// ---------------------------------------------------------------------
 	public void speak( MessageList list )
 	{
 		if(list != null) {
 			for (String s : list) {
-				System.out.println( s );
+				emitOutputToUser( s );
 			}
 		}
 	}
@@ -289,6 +294,10 @@ public class DataFile extends AdvGameData
 		{
 			msg = MessageFormat.format( fmt, (Object[])args );
 		}
+		emitOutputToUser( msg );
+	}
+	// ---------------------------------------------------------------------
+	public static void emitOutputToUser(String msg) {
 		System.out.println( msg );
 	}
 	// ---------------------------------------------------------------------

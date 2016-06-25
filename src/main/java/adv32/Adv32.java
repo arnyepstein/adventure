@@ -84,17 +84,15 @@ public class Adv32 extends Wizard
 	
     private void doGame( String path )
     {
-		MessageList kk = null;
+		MessageList temp_mlist = null;
 		int next_label = L_NEWGAME;
-		int rval, ll;
-		int i;
-		
+
 		init();
 	
 		if( path != null )	//  Restore file specified 
 		{
-			i = restore(path);	//  See what we've got 
-			switch(i)
+			int restoreChoice = restore(path);	//  See what we've got
+			switch(restoreChoice)
 			{
 			case 0:	 			//  The restore worked fine 
 				yea = Start(0);
@@ -126,17 +124,19 @@ public class Adv32 extends Wizard
 					if (!panic) clock2=15;
 					panic=TRUE;
 				}
-		
-				rval=fdwarf();          //  dwarf stuff                  
+
+			{
+				int rval=fdwarf();          //  dwarf stuff
 				if (rval==99)
 					die(99);
+			}
 			case 2000:
 				if (loc==0)
 					die(99);    //  label 2000                   
 //TODO:: Fix This				
-				kk = getSText(loc);
-				if ((abb[loc]%abbnum)==0 || kk == null)
-					kk = getLText(loc);
+				temp_mlist = getSText(loc);
+				if ((abb[loc]%abbnum)==0 || temp_mlist == null)
+					temp_mlist = getLText(loc);
 				if (!forced(loc) && dark(0))
 				{       
 					if (wzdark && pct(35))
@@ -144,11 +144,11 @@ public class Adv32 extends Wizard
 						die(90);
 						{next_label=2000; continue;}
 					}
-					kk = getRText(16);
+					temp_mlist = getRText(16);
 				}
 			case 2001:
 				if (toting(bear)) rspeak(141);  //  2001                 
-				speak(kk);
+				speak(temp_mlist);
 				k=1;
 				if (forced(loc))
 					{next_label=8; continue;}
@@ -158,9 +158,9 @@ public class Adv32 extends Wizard
 				// {
 				if (dark(0)) {next_label=L_NEXT_MOVE; continue;}
 				abb[loc]++;
-				for (i=atloc[loc]; i!=0; i=link[i])     // 2004  
+				for (int temp_i=atloc[loc]; temp_i!=0; temp_i=link[temp_i])     // 2004
 				{       
-					obj=i;
+					obj=temp_i;
 					if (obj>FIXED_OBJECT_OFFSET)
 						obj -= FIXED_OBJECT_OFFSET;
 					if (obj==steps && toting(nugget))
@@ -176,10 +176,12 @@ public class Adv32 extends Wizard
 						if (tally==tally2 && tally != 0)
 							if (limit>35) limit=35;
 					}
-					ll =  prop[obj];   //  2006         
-					if (obj==steps && loc==fixed[steps])
-						ll = 1;
-					pspeak(obj, ll);
+					{
+						int propid =  prop[obj];   //  2006
+						if (obj==steps && loc==fixed[steps])
+							propid = 1;
+						pspeak(obj, propid);
+					}
 				}                                       //  2008 
 				{next_label=L_NEXT_MOVE; continue;}
 			
@@ -199,10 +201,10 @@ public class Adv32 extends Wizard
 				{       
 					if (prop[oyster]<0 && toting(oyster))
 						pspeak(oyster,1);
-					for (i=1; i<=LAST_OBJECT_INDEX; i++)
+					for (int temp_i=1; temp_i<=LAST_OBJECT_INDEX; temp_i++)
 					{
-						if (toting(i)&&prop[i]<0)       // 2604  
-							prop[i] = -1-prop[i];
+						if (toting(temp_i)&&prop[temp_i]<0)       // 2604
+							prop[temp_i] = -1-prop[temp_i];
 					}
 				}
 				wzdark=dark(0);                 //  2605                 
@@ -285,27 +287,42 @@ public class Adv32 extends Wizard
 				if (weq(wd1,"west"))
 				if (++iwest==10) rspeak(17);
 			case 2630:
-				i=vocab(wd1,Usage.ANY);
-				if (i== -1)
-				{       spk=60;                 //  3000         
-					if (pct(20)) spk=61;
-					if (pct(20)) spk=13;
+			{
+				int temp_i = vocab(wd1, Usage.ANY);
+				if (temp_i == -1) {
+					spk = 60;                 //  3000
+					if (pct(20)) spk = 61;
+					if (pct(20)) spk = 13;
 					rspeak(spk);
-					{next_label=L_USER_INPUT; continue;}
+					{
+						next_label = L_USER_INPUT;
+						continue;
+					}
 				}
-				k=i%1000;
-				kq=i/1000+1;
-				switch(kq)
-				{
-					case 1: {next_label=8; continue;}
-					case 2: {next_label=5000; continue;}
-					case 3: {next_label=4000; continue;}
-					case 4: {next_label=L_PROMPT_K; continue;}
+				k = temp_i % 1000;
+				kq = temp_i / 1000 + 1;
+				switch (kq) {
+					case 1: {
+						next_label = 8;
+						continue;
+					}
+					case 2: {
+						next_label = 5000;
+						continue;
+					}
+					case 3: {
+						next_label = 4000;
+						continue;
+					}
+					case 4: {
+						next_label = L_PROMPT_K;
+						continue;
+					}
 					default:
-					printf("Error 22");
-					exit(0);
+						printf("Error 22");
+						exit(0);
 				}
-		
+			}
 			case L_RESTORED:
 				switch(march())
 				{   
@@ -338,9 +355,9 @@ public class Adv32 extends Wizard
 				{   case 1:                     //  take = 8010          
 						if (atloc[loc]==0 || link[atloc[loc]] != 0)
 							{next_label=8000; continue;}
-						for (i=1; i<=5; i++)
+						for (int temp_i=1; temp_i<=5; temp_i++)
 						{
-							if (dloc[i]==loc&&dflag>=2)
+							if (dwarfLoc[temp_i]==loc&&dflag>=2)
 								{next_label=8000; continue;}
 						}
 						obj=atloc[loc];
@@ -376,11 +393,11 @@ public class Adv32 extends Wizard
 						{next_label=L_NEXT_MOVE; continue;}
 					case 20:                    //  invent=8200          
 						spk=98;
-						for (i=1; i<=LAST_OBJECT_INDEX; i++)
-						{       if (i!=bear && toting(i))
+						for (int objid=1; objid<=LAST_OBJECT_INDEX; objid++)
+						{       if (objid!=bear && toting(objid))
 							{       if (spk==98) rspeak(99);
 								blklin=FALSE;
-								pspeak(i,-1);
+								pspeak(objid,-1);
 								blklin=TRUE;
 								spk=0;
 							}
@@ -628,9 +645,9 @@ public class Adv32 extends Wizard
 			case 9200:	// , invent
 				if (at(obj)||(liq(0)==obj&&at(bottle))
 					||k==liqloc(loc)) spk=94;
-				for (i=1; i<=5; i++)
-					if (dloc[i]==loc&&dflag>=2&&obj==dwarf)
-						spk=94;
+				for (int temp_i=1; temp_i<=5; temp_i++) {
+					if (dwarfLoc[temp_i]==loc&&dflag>=2&&obj==dwarf) spk=94;
+				}
 				if (closed) spk=138;
 				if (toting(obj)) spk=24;
 				{next_label=L_PROMPT_SPK; continue;}
@@ -704,9 +721,9 @@ public class Adv32 extends Wizard
 				{
 					{next_label=5120; continue;}
 				}
-				for (i=1; i<=5; i++)
+				for (int temp_i=1; temp_i<=5; temp_i++)
 				{
-					if (dloc[i]==loc&&dflag>=2)
+					if (dwarfLoc[temp_i]==loc&&dflag>=2)
 					{
 						{next_label=5010; continue;}
 					}
@@ -796,12 +813,9 @@ public class Adv32 extends Wizard
 	// ---------------------------------------------------------------------
 	int fdwarf()		//  71 
 	{	
-		int i,j;
-		TravList kk;
-	
 		if (newloc!=loc && !forced(loc) && !bitset(loc,3))
 		{	
-			for (i=1; i<=5; i++)
+			for (int i=1; i<=5; i++)
 			{	
 				if (odloc[i]!=newloc || !dseen[i])
 					continue;
@@ -822,51 +836,51 @@ public class Adv32 extends Wizard
 		{	
 			if (loc<15||pct(95)) return(2000);
 			dflag=2;
-			for (i=1; i<=2; i++)
+			for (int i=1; i<=2; i++)
 			{	
-				j=1+ran(5);
-				if (pct(50)&&saved== -1) dloc[j]=0; //  6001 
+				int dwarfid = 1+ran(5);
+				if (pct(50)&&saved== -1) dwarfLoc[dwarfid]=0; //  6001
 			}
-			for (i=1; i<=5; i++)
+			for (int i=1; i<=5; i++)
 			{	
-				if (dloc[i]==loc) dloc[i]=daltlc;
-				odloc[i]=dloc[i];		//  6002 
+				if (dwarfLoc[i]==loc) dwarfLoc[i]=daltlc;
+				odloc[i]= dwarfLoc[i];		//  6002
 			}
 			rspeak(3);
 			drop(axe,loc);
 			return(2000);
 		}
 		dtotal=attack=stick=0;			//  6010 
-		for (i=1; i<=6; i++)                    /* loop to 6030 */
-		{	
-			if (dloc[i]==0) continue;
-			j=1;
-			for (kk=getTravel(dloc[i]); kk!=null; kk=kk.next)
+		for (int dwarfid=1; dwarfid<=6; dwarfid++)                    /* loop to 6030 */
+		{
+			if (dwarfLoc[dwarfid]==0) continue;
+			int newdwarfid=1;
+			for (TravList travList =getTravel(dwarfLoc[dwarfid]); travList!=null; travList=travList.next)
 			{	
-				newloc=kk.tloc;
+				newloc=travList.tloc;
 				if (newloc>300
 					||newloc<15
-					||newloc==odloc[i]
-					||(j>1&&newloc==tk[j-1])
-					||j>=20
-					||newloc==dloc[i]
+					||newloc==odloc[dwarfid]
+					||(newdwarfid>1&&newloc==tk[newdwarfid-1])
+					||newdwarfid>=20
+					||newloc== dwarfLoc[dwarfid]
 					||forced(newloc)
-					||(i==6&&bitset(newloc,3))
-					||kk.conditions==100)
+					||(dwarfid==6&&bitset(newloc,3))
+					||travList.conditions==100)
 				{
 					continue;
 				}
-				tk[j++]=newloc;
+				tk[newdwarfid++]=newloc;
 			}
-			tk[j]=odloc[i];                 /* 6016 */
-			if (j>=2) j--;
-			j=1+ran(j);
-			odloc[i]=dloc[i];
-			dloc[i]=tk[j];
-			dseen[i]=(dseen[i]&&loc>=15)||(dloc[i]==loc||odloc[i]==loc);
-			if (!dseen[i]) continue;        /* i.e. goto 6030 */
-			dloc[i]=loc;
-			if (i==6)                       /* pirate's spotted him */
+			tk[newdwarfid]=odloc[dwarfid];                 /* 6016 */
+			if (newdwarfid>=2) newdwarfid--;
+			newdwarfid=1+ran(newdwarfid);
+			odloc[dwarfid]= dwarfLoc[dwarfid];
+			dwarfLoc[dwarfid]=tk[newdwarfid];
+			dseen[dwarfid]=(dseen[dwarfid]&&loc>=15)||(dwarfLoc[dwarfid]==loc||odloc[dwarfid]==loc);
+			if (!dseen[dwarfid]) continue;        /* i.e. goto 6030 */
+			dwarfLoc[dwarfid]=loc;
+			if (dwarfid==6)                       /* pirate's spotted him */
 			{
 				int next_label = 0;
 				while(true) 
@@ -876,40 +890,40 @@ public class Adv32 extends Wizard
 					case 0:
 						if (loc==chloc||prop[chest]>=0) break;
 						k=0;
-						for (j=FIRST_TREASURE_INDEX; j<=LAST_TREASURE_INDEX; j++)      /* loop to 6020 */
+						for (newdwarfid=FIRST_TREASURE_INDEX; newdwarfid<=LAST_TREASURE_INDEX; newdwarfid++)      /* loop to 6020 */
 						{       
-							if (j==pyram&&(loc==plac[pyram]
+							if (newdwarfid==pyram&&(loc==plac[pyram]
 								 || loc==plac[emrald])) // goto l6020;
 							{
 							}
 							else
 							{
-								if (toting(j)) {next_label = 2; break;};
+								if (toting(newdwarfid)) {next_label = 2; break;};
 							}
 						//l6020:  
-							if (here(j)) k=1;
+							if (here(newdwarfid)) k=1;
 							next_label = 1;
 						}                              /* 6020 */
 						continue;
 					case 1: // l6021:  
 						if (tally==tally2+1 && k==0 && place[chest]==0
 							&&here(lamp) && prop[lamp]==1) {next_label = 5; continue;};
-						if (odloc[6]!=dloc[6]&&pct(20))
+						if (odloc[6]!= dwarfLoc[6]&&pct(20))
 							rspeak(127);
 						break;       /* to 6030 */
 					case 2: // l6022:  
 						rspeak(128);
 						if (place[messag]==0) move(chest,chloc);
 						move(messag,chloc2);
-						for (j=FIRST_TREASURE_INDEX; j<=LAST_TREASURE_INDEX; j++)      /* loop to 6023 */
+						for (newdwarfid=FIRST_TREASURE_INDEX; newdwarfid<=LAST_TREASURE_INDEX; newdwarfid++)      /* loop to 6023 */
 						{       
-							if (j==pyram && (loc==plac[pyram]
+							if (newdwarfid==pyram && (loc==plac[pyram]
 								|| loc==plac[emrald])) break;
-							if (at(j)&&fixed[j]==0) carry(j,loc);
-							if (toting(j)) drop(j,chloc);
+							if (at(newdwarfid)&&fixed[newdwarfid]==0) carry(newdwarfid,loc);
+							if (toting(newdwarfid)) drop(newdwarfid,chloc);
 						}
 					case 4: // l6024:  
-						dloc[6]=odloc[6]=chloc;
+						dwarfLoc[6]=odloc[6]=chloc;
 						dseen[6]=FALSE;
 						break;
 					case 5: // l6025:  
@@ -924,7 +938,7 @@ public class Adv32 extends Wizard
 				continue;
 			}
 			dtotal++;                       /* 6027 */
-			if (odloc[i]!=dloc[i]) continue;
+			if (odloc[dwarfid]!= dwarfLoc[dwarfid]) continue;
 			attack++;
 			if (knfloc>=0) knfloc=loc;
 			if (ran(1000)<95*(dflag-2)) stick++;
@@ -967,8 +981,6 @@ public class Adv32 extends Wizard
 	//  label 8              
 	int march()
 	{       
-		int ll1,ll2;
-	
 		if ((tkk=getTravel(newloc=loc))==null)
 			bug(26);
 		if (k==0)
@@ -1014,9 +1026,9 @@ public class Adv32 extends Wizard
 	//l11:    
 		while (true)
 		{
-			ll1=tkk.conditions;                    //  11                   
-			ll2=tkk.tloc;
-			newloc=ll1;                             //  newloc=conditions    
+			int conditionloc=tkk.conditions;                    //  11
+			int tloc=tkk.tloc;
+			newloc=conditionloc;                             //  newloc=conditions
 			k=newloc%100;                           //  k used for prob
 			int next_label  = 0;
 			while(true)
@@ -1028,7 +1040,7 @@ public class Adv32 extends Wizard
 					if(!(newloc<=100)) { next_label = 2; continue;}    //  13                   
 					if(newloc!=0 && !pct(newloc)) break; // goto l12;  //  14   
 				case 1: //		l16:    
-					newloc=ll2;             //  newloc=location      
+					newloc=tloc;             //  newloc=location
 					if (newloc<=300)
 						return(2);
 					if (newloc<=500)
@@ -1068,7 +1080,7 @@ public class Adv32 extends Wizard
 		// l12:    //  alternative to probability move      
 			for (; tkk!=null; tkk=tkk.next)
 			{
-				if (tkk.tloc!=ll2 || tkk.conditions!=ll1)
+				if (tkk.tloc!=tloc || tkk.conditions!=conditionloc)
 					break;
 			}
 			if (tkk==null)
@@ -1079,31 +1091,28 @@ public class Adv32 extends Wizard
 	// ---------------------------------------------------------------------
 	int mback()                                         //  20                   
 	{       
-		TravList tk2;
-		TravList j;
-		int ll;
-		
-		if (forced(k=oldloc)) k=oldlc2;         //  k=location           
+		if (forced(k=oldloc)) k=oldlc2;         //  k=location
 		oldlc2=oldloc;
 		oldloc=loc;
-		tk2=null;
+		TravList tk2=null;
 		if (k==loc)
 		{       
 			rspeak(91);
 			return(2);
 		}
 		for (; tkk!=null; tkk=tkk.next)           //  21                   
-		{       ll=tkk.tloc;
-			if (ll==k)
+		{
+			int tloc=tkk.tloc;
+			if (tloc==k)
 			{       
 				k=tkk.tverb;           //  k back to verb       
 				tkk=getTravel(loc);
 				return(9);
 			}
-			if (ll<=300)
-			{       
-				j=getTravel(loc);
-				if (forced(ll) && k==j.tloc) tk2=tkk;
+			if (tloc<=300)
+			{
+				TravList jjj = getTravel(loc);
+				if (forced(tloc) && k==jjj.tloc) tk2=tkk;
 			}
 		}
 		tkk=tk2;                                //  23                   
@@ -1187,8 +1196,7 @@ public class Adv32 extends Wizard
 	// ---------------------------------------------------------------------
 	void checkhints()                                    //  2600 &c              
 	{       
-		int hint;
-		for (hint=4; hint<=hntmax; hint++)
+		for (int hint=4; hint<=hntmax; hint++)
 		{       
 			if (hinted[hint]) continue;
 			if (!bitset(loc,hint)) hintlc[hint]= -1;
@@ -1432,7 +1440,7 @@ public class Adv32 extends Wizard
 	{       
 		int i;
 		for (i=1; i<=5; i++)
-			if (dloc[i]==loc&&dflag>=2) break;
+			if (dwarfLoc[i]==loc&&dflag>=2) break;
 		if (i==6) i=0;
 		if (obj==0)                     //  9122                         
 		{       
@@ -1521,13 +1529,13 @@ public class Adv32 extends Wizard
 		if (obj!=axe) return(9020);
 		for (i=1; i<=5; i++)
 		{       
-			if (dloc[i]==loc)
+			if (dwarfLoc[i]==loc)
 			{       
 				spk=48;                 //  9172                 
 				if (ran(3)==0||saved!= -1)
 					return trtoss_exit( spk, axe,loc );
 				dseen[i]=FALSE;
-				dloc[i]=0;
+				dwarfLoc[i]=0;
 				spk=47;
 				dkill++;
 				if (dkill==1) spk=149;
@@ -1631,7 +1639,7 @@ public class Adv32 extends Wizard
 		for (i=1; i<=6; i++)
 		{       
 			dseen[i]=FALSE;
-			dloc[i]=0;
+			dwarfLoc[i]=0;
 		}
 		move(troll,0);
 		move(troll+FIXED_OBJECT_OFFSET,0);
@@ -1751,7 +1759,7 @@ public class Adv32 extends Wizard
 			{
 				int diff = info.max_score+1-score;
 				printf(
-					"To achieve the next higher rating, you need {0} more point{2}"
+					"To achieve the next higher rating, you need {0} more point{1}"
 					,diff
 					,(diff==1) ? "." : "s."
 				);
@@ -1770,7 +1778,8 @@ public class Adv32 extends Wizard
 			oldlc2=loc;
 		}
 		if (closng)                             //  99                   
-		{       rspeak(131);
+		{
+			rspeak(131);
 			numdie++;
 			done(2);
 		}
@@ -1993,12 +2002,12 @@ public class Adv32 extends Wizard
 			dseen[i]=false;
 		}
 		dflag=0;
-		dloc[1]=19;
-		dloc[2]=27;
-		dloc[3]=33;
-		dloc[4]=44;
-		dloc[5]=64;
-		dloc[6]=chloc;
+		dwarfLoc[1]=19;
+		dwarfLoc[2]=27;
+		dwarfLoc[3]=33;
+		dwarfLoc[4]=44;
+		dwarfLoc[5]=64;
+		dwarfLoc[6]=chloc;
 		daltlc=18;
 	
 		//  random flags & ctrs 

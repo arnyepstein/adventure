@@ -101,7 +101,7 @@ class AdvSaveData implements java.io.Serializable
 	public boolean wzdark;
     public boolean yea;
     public int atloc;
-	public int dloc[] = new int[7];  // dwarf stuff
+	public int dwarfLoc[] = new int[7];  // dwarf stuff
 	public int odloc[] = new int[7];
 	public boolean dseen[] = new boolean[7];
 	public boolean hinted[] = new boolean[20];
