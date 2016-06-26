@@ -45,7 +45,7 @@ public class AdvGameData extends AdvSaveData
 	public final static int TURNS_IN_A_DEMO_GAME=50;// How short is a demo game?
 
 	// ---------------------------------------------------------------------
-	public final class TravList
+	public static final class TravList
 	{
 		TravList next;	//  ptr to next list entry	   
 		int conditions;	//  m in writeup (newloc / 1000) 
@@ -53,6 +53,35 @@ public class AdvGameData extends AdvSaveData
 		int tverb;		//  the verb that takes you there
 		int index;		// Used for Save and Restore (java version only)
 	}
+	// ---------------------------------------------------------------------
+	public static final class QueryState {
+
+		boolean isrdata;
+		int question;
+		int true_response;
+		int false_response;
+		int next_label;
+		boolean response;
+
+		QueryState(
+			boolean isrdata,
+			int question,
+			int true_response,
+			int false_response,
+			int next_label)
+		{
+			this.false_response = false_response;
+			this.true_response = true_response;
+			this.isrdata = isrdata;
+			this.next_label = next_label;
+			this.question = question;
+		}
+		public boolean saidYes() {
+			return response;
+		}
+	}
+
+	// ---------------------------------------------------------------------
 	TravList tkk;
 	
 	public int keys;
@@ -124,7 +153,8 @@ public class AdvGameData extends AdvSaveData
 	public boolean isClosed;
 	public boolean isScoring;
 	//
-	//	
+	//
+	public QueryState queryState;
 	public int delhit;
 	public int hntmax;
 	public int hintlc[] = new int[20];

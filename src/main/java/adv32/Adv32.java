@@ -39,6 +39,9 @@
  */
 package adv32;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public class Adv32 extends Wizard
 {
 
@@ -55,7 +58,10 @@ public class Adv32 extends Wizard
 	}
 
 	private final static int L_NEWGAME=2;
+	private final static int L_NEWGAME_1=7;
 	private final static int L_RESTORED=8;
+	private final static int L_YES_QUERY =33;
+	private final static int L_YES_RESPONSE=34;
 	private final static int L_PROMPT_OK=2009;
 	private final static int L_PROMPT_K=2010;
 	private final static int L_PROMPT_SPK=2011;
@@ -93,7 +99,8 @@ public class Adv32 extends Wizard
 		init();
 
 		int initialLabel = L_NEWGAME;
-		if (path != null)    //  Restore file specified
+		// TODO: Handle Save and Restore
+		if (false && path != null)    //  Restore file specified
 		{
 			int restoreChoice = restore(path);    //  See what we've got
 			switch (restoreChoice) {
@@ -108,12 +115,20 @@ public class Adv32 extends Wizard
 					rspeak(202);    //  You dissolve
 					exit(0);        //  File could be non-adventure
 			}                    //  So don't unlink it.
-		} else {
-			startup();
 		}
+//		else {
+//			startup();
+//		}
 		CrankInput input = new CrankInput(initialLabel, null);
 		while(true) {
+			// Create a channel object
+			ListOutputChannel outputChannel = new ListOutputChannel();
+			setOutputChannel(outputChannel);
+
 			CrankOutput output = turnTheCrank(input);
+			for(String line : outputChannel.getLines()) {
+				System.out.println(line);
+			}
 			switch(output.type) {
 				case exit: return;
 				case getInput:
@@ -126,13 +141,14 @@ public class Adv32 extends Wizard
 //						wd1= "quit";
 //						wd2 = null;
 //					}
+
 					input = new CrankInput(output.reentryPoint, line);
 				}
 			}
 		}
 	}
 
-	static class CrankOutput {
+	static class CrankOutput  {
 		public CrankOutput(Type type, int reentryPoint) {
 			this.type = type;
 			this.reentryPoint = reentryPoint;
@@ -142,6 +158,7 @@ public class Adv32 extends Wizard
 			getInput,
 			exit
 		}
+		List<String> lines;
 		Type type;
 		int reentryPoint;
 	}
@@ -155,7 +172,22 @@ public class Adv32 extends Wizard
 		String userInput;
 	}
 
+	static class ListOutputChannel implements AdvIO.OutputChannel {
+		List<String> lines = new ArrayList<>();
+
+		@Override
+		public void emitOutputToUser(String msg) {
+			lines.add(msg);
+		}
+
+		public List<String> getLines() {
+			return lines;
+		}
+
+	}
+
 	public CrankOutput turnTheCrank(CrankInput crankInput) {
+
 		MessageList temp_mlist = null;
 		int next_label = crankInput.entryPoint;
 		// Main Execution Loop
@@ -165,6 +197,24 @@ public class Adv32 extends Wizard
 			switch(next_label)
 			{
 			case L_NEWGAME:
+				initRandomNumbers();
+
+				demo = Start(0);
+				//?? srand((int)(time((time_t *)NULL)));	//  random seed
+				//??  srand(371);				/* non-random seed
+				{next_label=initiateYes(65,1,0,L_NEWGAME_1); continue;}
+
+			case L_NEWGAME_1:
+//				hinted[3] = yes(65,1,0);
+				hinted[3] = queryState.saidYes();
+				newloc=1;
+				delhit = 0;
+				limit=330;
+				if (hinted[3])
+				{
+					limit=1000;      //  better batteries if instrucs
+				}
+
 				if (newloc<9 && newloc!=0 && isClosing)
 				{       
 					rspeak(130);    //  if closing leave only by     
@@ -172,12 +222,11 @@ public class Adv32 extends Wizard
 					if (!panic) clock2=15;
 					panic=true;
 				}
-
-			{
-				int rval=fdwarf();          //  dwarf stuff
-				if (rval==99)
-					die(99);
-			}
+				{
+					int rval=fdwarf();          //  dwarf stuff
+					if (rval==99)
+						die(99);
+				}
 			case 2000:
 				if (loc==0)
 					die(99);    //  label 2000                   
@@ -232,7 +281,11 @@ public class Adv32 extends Wizard
 					}
 				}                                       //  2008 
 				{next_label=L_NEXT_MOVE; continue;}
-			
+			case L_YES_QUERY:
+				return yesQuery(queryState);
+			case L_YES_RESPONSE:
+				{next_label=yesResponse(queryState, crankInput.userInput); continue;}
+
 			case L_PROMPT_OK:
 				k=54;                   //  2009                 
 			case L_PROMPT_K:
@@ -241,7 +294,7 @@ public class Adv32 extends Wizard
 				rspeak(spk);
 				// ENDFLATTEN }
 			case L_NEXT_MOVE:
-				verb=0;                         //  2012                 
+				verb=0;                         //  2012
 				obj=0;
 			case L_USER_INPUT:
 				checkhints();                   //  to 2600-2602         
@@ -374,7 +427,7 @@ public class Adv32 extends Wizard
 				switch(march())
 				{   
 					case 2:
-						{next_label=2; continue;} //  back to 2            
+						{next_label=2; continue;} //  back to 2
 					case 99:
 					switch(die(99))
 					{   
@@ -1099,7 +1152,7 @@ public class Adv32 extends Wizard
 		return(99);
 	}
 	// ---------------------------------------------------------------------
-	//  label 8              
+	//  label 8
 	int march()
 	{       
 		if ((tkk=getTravel(newloc=loc))==null)
@@ -1158,7 +1211,7 @@ public class Adv32 extends Wizard
 				{
 				case 0:
 					if(!(newloc<=300)) { next_label = 3; continue;}
-					if(!(newloc<=100)) { next_label = 2; continue;}    //  13                   
+					if(!(newloc<=100)) { next_label = 2; continue;}    //  13
 					if(newloc!=0 && !pct(newloc)) break; // goto l12;  //  14   
 				case 1: //		l16:    
 					newloc=tloc;             //  newloc=location
@@ -1209,6 +1262,67 @@ public class Adv32 extends Wizard
 			//goto l11;
 		}
 	}
+
+	// ---------------------------------------------------------------------
+	public CrankOutput yesQuery(QueryState state) {
+		if(state.isrdata) {
+			rspeak(state.question);     //  tell him what we want
+		} else {
+			mspeak(state.question);     //  tell him what we want
+		}
+		// Exit and re-enter at L_YES_RESPONSE
+		return new CrankOutput(CrankOutput.Type.getInput, L_YES_RESPONSE);
+	}
+	// ---------------------------------------------------------------------
+	public int yesResponse(QueryState state, String input) {
+		int message;
+		if(input.equals("y") || input.equals("yes")) {
+			state.response = true;
+			message = state.true_response;
+		} else if(input.equals("n") || input.equals("no")) {
+			state.response = false;
+			message = state.false_response;
+		}  else {
+			printf("Please answer the question.");
+			return L_YES_QUERY;
+		}
+		if(state.isrdata) {
+			rspeak(message);     //  tell him what we want
+		} else {
+			mspeak(message);     //  tell him what we want
+		}
+		return state.next_label;
+	}
+	// ---------------------------------------------------------------------
+	public int initiateYes(
+		int question,
+		int true_response,
+		int false_response,
+		int next_label)
+	{
+		return initiateQuery(true, question, true_response, false_response, next_label);
+	}
+	// ---------------------------------------------------------------------
+	public int initiateMYes(
+		int question,
+		int true_response,
+		int false_response,
+		int next_label)
+	{
+		return initiateQuery(false, question, true_response, false_response, next_label);
+	}
+	// ---------------------------------------------------------------------
+	private  int initiateQuery(
+		boolean isrdata,
+		int question,
+		int true_response,
+		int false_response,
+		int next_label)
+	{
+		queryState = new QueryState(isrdata, question, true_response, false_response, next_label);
+		return L_YES_QUERY;
+	}
+
 	// ---------------------------------------------------------------------
 	int mback()                                         //  20                   
 	{       

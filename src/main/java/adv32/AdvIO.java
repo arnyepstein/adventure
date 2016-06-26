@@ -229,8 +229,8 @@ public class AdvIO extends DataFile
 	// ---------------------------------------------------------------------
 	private static void DP( String fmt, Object... args )
 	{
-		String msg = sprintf(fmt, (Object[]) args);
-		printf("[AdvIO] " + msg);
+//		String msg = sprintf(fmt, (Object[]) args);
+//		printf("[AdvIO] " + msg);
 	}
 	// ---------------------------------------------------------------------
 	private static BufferedReader _reader;

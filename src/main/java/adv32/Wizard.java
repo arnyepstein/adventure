@@ -40,7 +40,6 @@
 package adv32;
 
 import java.util.Date;
-import java.util.Random;
 
 public class Wizard extends AdvIO
 {
@@ -135,10 +134,10 @@ public class Wizard extends AdvIO
 	*/
 	}
 	// ---------------------------------------------------------------------
-	private static void DP( String fmt, Object... args )
+	private void DP( String fmt, Object... args )
 	{
-		String msg = sprintf(fmt, (Object[]) args);
-		printf("[Wizard] " + msg);
+//		String msg = sprintf(fmt, (Object[]) args);
+//		printf("[Wizard] " + msg);
 	}
 	// ---------------------------------------------------------------------
 	private String _magic = "dwarf";

@@ -45,6 +45,9 @@ import java.util.*;
 
 public class DataFile extends AdvGameData
 {
+	public interface OutputChannel {
+		void emitOutputToUser(String msg);
+	}
 	// ---------------------------------------------------------------------
 	static class MessageListSet extends ArrayList<MessageList> {
 		public MessageListSet() { super(256); }
@@ -114,9 +117,14 @@ public class DataFile extends AdvGameData
 		}
 	}
 	// ---------------------------------------------------------------------
+	private OutputChannel outputChannel;
 
 	public DataFile()
 	{
+	}
+	// ---------------------------------------------------------------------
+	public void setOutputChannel(OutputChannel outputChannel) {
+		this.outputChannel = outputChannel;
 	}
 	// ---------------------------------------------------------------------
 	public void rspeak( int msg_id )
@@ -275,7 +283,7 @@ public class DataFile extends AdvGameData
 		);
 	}
 	// ---------------------------------------------------------------------
-	public static String sprintf( String fmt, Object... args )
+	public String sprintf( String fmt, Object... args )
 	{
 		String msg = fmt;
 		if( args != null && args.length >0 )
@@ -285,7 +293,7 @@ public class DataFile extends AdvGameData
 		return msg;
 	}
 	// ---------------------------------------------------------------------
-	public static void printf( String fmt, Object... args )
+	public void printf( String fmt, Object... args )
 	{
 		String msg = fmt;
 		if( args != null && args.length >0 )
@@ -295,8 +303,12 @@ public class DataFile extends AdvGameData
 		emitOutputToUser( msg );
 	}
 	// ---------------------------------------------------------------------
-	public static void emitOutputToUser(String msg) {
-		System.out.println( msg );
+	public void emitOutputToUser(String msg) {
+		if(outputChannel != null) {
+			outputChannel.emitOutputToUser(msg);
+		} else {
+			System.out.println( msg );
+		}
 	}
 	// ---------------------------------------------------------------------
 	public void exit(int id)
@@ -725,10 +737,10 @@ public class DataFile extends AdvGameData
 		}
 	}
 	// ---------------------------------------------------------------------
-	private static void DP( String fmt, Object... args )
+	private void DP( String fmt, Object... args )
 	{
-		String msg = sprintf(fmt, (Object[]) args);
-		printf("[DataFile] " + msg);
+//		String msg = sprintf(fmt, (Object[]) args);
+//		printf("[DataFile] " + msg);
 	}
 	// ---------------------------------------------------------------------
 	private MessageListSet longDescriptionSet = new MessageListSet();
