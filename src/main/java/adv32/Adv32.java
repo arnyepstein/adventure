@@ -57,8 +57,9 @@ public class Adv32 extends Wizard
 	{
 	}
 
+	private final static int L_PREAMBLE=0;
 	private final static int L_NEWGAME=2;
-	private final static int L_NEWGAME_1=7;
+	private final static int L_PREAMBLE_1 =7;
 	private final static int L_RESTORED=8;
 	private final static int L_YES_QUERY =33;
 	private final static int L_YES_RESPONSE=34;
@@ -98,7 +99,7 @@ public class Adv32 extends Wizard
 
 		init();
 
-		int initialLabel = L_NEWGAME;
+		int initialLabel = L_PREAMBLE;
 		// TODO: Handle Save and Restore
 		if (false && path != null)    //  Restore file specified
 		{
@@ -196,15 +197,15 @@ public class Adv32 extends Wizard
 			DP("MainLoop: {0}", next_label);
 			switch(next_label)
 			{
-			case L_NEWGAME:
+			case L_PREAMBLE:
 				initRandomNumbers();
 
 				demo = Start(0);
 				//?? srand((int)(time((time_t *)NULL)));	//  random seed
 				//??  srand(371);				/* non-random seed
-				{next_label=initiateYes(65,1,0,L_NEWGAME_1); continue;}
+				{next_label=initiateYes(65,1,0, L_PREAMBLE_1); continue;}
 
-			case L_NEWGAME_1:
+			case L_PREAMBLE_1:
 //				hinted[3] = yes(65,1,0);
 				hinted[3] = queryState.saidYes();
 				newloc=1;
@@ -215,6 +216,7 @@ public class Adv32 extends Wizard
 					limit=1000;      //  better batteries if instrucs
 				}
 
+			case L_NEWGAME:
 				if (newloc<9 && newloc!=0 && isClosing)
 				{       
 					rspeak(130);    //  if closing leave only by     
