@@ -61,6 +61,8 @@ public class Adv32 extends Wizard
 	private final static int L_NEWGAME=2;
 	private final static int L_PREAMBLE_1 =7;
 	private final static int L_RESTORED=8;
+	private final static int L_EXIT_GAME=9;
+	private final static int L_RESURRECT_RESPONSE=10;
 	private final static int L_YES_QUERY =33;
 	private final static int L_YES_RESPONSE=34;
 	private final static int L_PROMPT_OK=2009;
@@ -71,9 +73,14 @@ public class Adv32 extends Wizard
 	private final static int L_PARSE_USER_INPUT=2608;
 	private final static int L_PROCESS_USER_INPUT=2609;
 
+	private final static int L_CHECK_FOR_REALLY_QUIT=4081;
+	private final static int L_CHECK_FOR_QUIT=4082;
+	private final static int L_CHECK_FOR_ACCEPTABLE=4083;
+
 	private final static int L_ASK_WHAT_OBJ=8000;
 	private final static int L_TRY_KILL=9120;
 	private final static int L_TRY_KILL_RESPONSE=9122;
+
 
 	private void processCommandLine(String[] args) {
 		String path = null;
@@ -192,735 +199,770 @@ public class Adv32 extends Wizard
 		MessageList temp_mlist = null;
 		int next_label = crankInput.entryPoint;
 		// Main Execution Loop
-		for (;;)                        //  main command loop (label 2)  
+		for (;;)                        //  main command loop (label 2)
 		{
 			DP("MainLoop: {0}", next_label);
 			switch(next_label)
 			{
-			case L_PREAMBLE:
-				initRandomNumbers();
-
-				demo = Start(0);
-				//?? srand((int)(time((time_t *)NULL)));	//  random seed
-				//??  srand(371);				/* non-random seed
-				{next_label=initiateYes(65,1,0, L_PREAMBLE_1); continue;}
-
-			case L_PREAMBLE_1:
-//				hinted[3] = yes(65,1,0);
-				hinted[3] = queryState.saidYes();
-				newloc=1;
-				delhit = 0;
-				limit=330;
-				if (hinted[3])
+				case L_RESURRECT_RESPONSE:
 				{
-					limit=1000;      //  better batteries if instrucs
+					yea = queryState.saidYes();
+					numdie++;
+					if (numdie==maxdie || !yea) {
+						next_label = done(2);
+						continue;
+					}
+					place[water]=0;
+					place[oil]=0;
+					if (toting(lamp)) prop[lamp]=0;
+					for (int i=FIXED_OBJECT_OFFSET; i>=1; i--)
+					{
+						if (!toting(i)) continue;
+						k=oldlc2;
+						if (i==lamp) k=1;
+						drop(i,k);
+					}
+					loc=3;
+					oldloc=loc;
+					next_label = 2000;
+					continue;
+
+				}
+				case L_EXIT_GAME:
+				{
+					return new CrankOutput(CrankOutput.Type.exit, 0);
 				}
 
-			case L_NEWGAME:
-				if (newloc<9 && newloc!=0 && isClosing)
-				{       
-					rspeak(130);    //  if closing leave only by     
-					newloc=loc;     //       main office             
-					if (!panic) clock2=15;
-					panic=true;
-				}
+				case L_PREAMBLE:
+					initRandomNumbers();
+
+					demo = Start(0);
+					{next_label=initiateYes(65,1,0, L_PREAMBLE_1); continue;}
+
+				case L_PREAMBLE_1:
+//				hinted[3] = yes(65,1,0);
+					hinted[3] = queryState.saidYes();
+					newloc=1;
+					delhit = 0;
+					limit=330;
+					if (hinted[3])
+					{
+						limit=1000;      //  better batteries if instrucs
+					}
+
+				case L_NEWGAME:
+					if (newloc<9 && newloc!=0 && isClosing)
+					{
+						rspeak(130);    //  if closing leave only by
+						newloc=loc;     //       main office
+						if (!panic) clock2=15;
+						panic=true;
+					}
 				{
 					int rval=fdwarf();          //  dwarf stuff
-					if (rval==99)
-						die(99);
+					if (rval==99)  {next_label = die(99); continue;}
 				}
-			case 2000:
-				if (loc==0)
-					die(99);    //  label 2000                   
-//TODO:: Fix This				
-				temp_mlist = getSText(loc);
-				if ((abb[loc]%abbnum)==0 || temp_mlist == null)
-					temp_mlist = getLText(loc);
-				if (!forced(loc) && dark(0))
-				{       
-					if (wzdark && pct(35))
-					{       
-						die(90);
-						{next_label=2000; continue;}
-					}
-					temp_mlist = getRText(16);
-				}
-			case 2001:
-				if (toting(bear)) rspeak(141);  //  2001                 
-				speak(temp_mlist);
-				k=1;
-				if (forced(loc))
-					{next_label=8; continue;}
-				if (loc==33 && pct(25)&&!isClosing) rspeak(8);
-				// FLATTEN
-				//if (!dark(0))
-				// {
-				if (dark(0)) {next_label=L_NEXT_MOVE; continue;}
-				abb[loc]++;
-				for (int temp_i=atloc[loc]; temp_i!=0; temp_i=link[temp_i])     // 2004
-				{       
-					obj=temp_i;
-					if (obj>FIXED_OBJECT_OFFSET)
-						obj -= FIXED_OBJECT_OFFSET;
-					if (obj==steps && toting(nugget))
-						continue;
-					if (prop[obj]<0)
-					{       
-						if (isClosed)
-							continue;
-						prop[obj]=0;
-						if (obj==rug||obj==chain)
-							prop[obj]=1;
-						tally--;
-						if (tally==tally2 && tally != 0)
-							if (limit>35) limit=35;
-					}
+				case 2000:
+					if (loc==0) {next_label = die(99); continue;}
+//TODO:: Fix This
+					temp_mlist = getSText(loc);
+					if ((abb[loc]%abbnum)==0 || temp_mlist == null)
+						temp_mlist = getLText(loc);
+					if (!forced(loc) && dark(0))
 					{
-						int propid =  prop[obj];   //  2006
-						if (obj==steps && loc==fixed[steps])
-							propid = 1;
-						pspeak(obj, propid);
+						if (wzdark && pct(35))
+						{
+							next_label = die(99); continue;
+						}
+						temp_mlist = getRText(16);
 					}
-				}                                       //  2008 
+				case 2001:
+					if (toting(bear)) rspeak(141);  //  2001
+					speak(temp_mlist);
+					k=1;
+					if (forced(loc))
+					{next_label=8; continue;}
+					if (loc==33 && pct(25)&&!isClosing) rspeak(8);
+					// FLATTEN
+					//if (!dark(0))
+					// {
+					if (dark(0)) {next_label=L_NEXT_MOVE; continue;}
+					abb[loc]++;
+					for (int temp_i=atloc[loc]; temp_i!=0; temp_i=link[temp_i])     // 2004
+					{
+						obj=temp_i;
+						if (obj>FIXED_OBJECT_OFFSET)
+							obj -= FIXED_OBJECT_OFFSET;
+						if (obj==steps && toting(nugget))
+							continue;
+						if (prop[obj]<0)
+						{
+							if (isClosed)
+								continue;
+							prop[obj]=0;
+							if (obj==rug||obj==chain)
+								prop[obj]=1;
+							tally--;
+							if (tally==tally2 && tally != 0)
+								if (limit>35) limit=35;
+						}
+						{
+							int propid =  prop[obj];   //  2006
+							if (obj==steps && loc==fixed[steps])
+								propid = 1;
+							pspeak(obj, propid);
+						}
+					}                                       //  2008
 				{next_label=L_NEXT_MOVE; continue;}
-			case L_YES_QUERY:
-				return yesQuery(queryState);
-			case L_YES_RESPONSE:
+				case L_YES_QUERY:
+					return yesQuery(queryState);
+				case L_YES_RESPONSE:
 				{next_label=yesResponse(queryState, crankInput.userInput); continue;}
 
-			case L_PROMPT_OK:
-				k=54;                   //  2009                 
-			case L_PROMPT_K:
-				spk=k;
-			case L_PROMPT_SPK:
-				rspeak(spk);
-				// ENDFLATTEN }
-			case L_NEXT_MOVE:
-				verb=0;                         //  2012
-				obj=0;
-			case L_USER_INPUT:
-				checkhints();                   //  to 2600-2602         
-				if (isClosed)
-				{       
-					if (prop[oyster]<0 && toting(oyster))
-						pspeak(oyster,1);
-					for (int temp_i=1; temp_i<=LAST_OBJECT_INDEX; temp_i++)
+				case L_PROMPT_OK:
+					k=54;                   //  2009
+				case L_PROMPT_K:
+					spk=k;
+				case L_PROMPT_SPK:
+					rspeak(spk);
+					// ENDFLATTEN }
+				case L_NEXT_MOVE:
+					verb=0;                         //  2012
+					obj=0;
+				case L_USER_INPUT:
+					checkhints();                   //  to 2600-2602
+					if (isClosed)
 					{
-						if (toting(temp_i)&&prop[temp_i]<0)       // 2604
-							prop[temp_i] = -1-prop[temp_i];
+						if (prop[oyster]<0 && toting(oyster))
+							pspeak(oyster,1);
+						for (int temp_i=1; temp_i<=LAST_OBJECT_INDEX; temp_i++)
+						{
+							if (toting(temp_i)&&prop[temp_i]<0)       // 2604
+								prop[temp_i] = -1-prop[temp_i];
+						}
 					}
-				}
-				wzdark=dark(0);                 //  2605                 
-				if (knfloc>0 && knfloc!=loc) knfloc=1;
-				return new CrankOutput(CrankOutput.Type.getInput, L_PARSE_USER_INPUT);
+					wzdark=dark(0);                 //  2605
+					if (knfloc>0 && knfloc!=loc) knfloc=1;
+					return new CrankOutput(CrankOutput.Type.getInput, L_PARSE_USER_INPUT);
 //				DP("GETIN @loc({0})", loc);
 //				getin();
 
-			case L_PARSE_USER_INPUT:
-				parseUserInputLine(crankInput.userInput);
-				// Fall Through ...
-			case L_PROCESS_USER_INPUT:
+				case L_PARSE_USER_INPUT:
+					parseUserInputLine(crankInput.userInput);
+					// Fall Through ...
+				case L_PROCESS_USER_INPUT:
 					if ((foobar = -foobar)>0) foobar=0;     //  2608
-				//  should check here for "magic mode"                   
-				turns++;
-				if (demo && turns>=TURNS_IN_A_DEMO_GAME) done(1);      //  to 13000     
-		
-				if (verb==say && wd2!=null) verb=0;
-				if (verb==say)
+					//  should check here for "magic mode"
+					turns++;
+					if (demo && turns>=TURNS_IN_A_DEMO_GAME) {next_label=done(1); continue;}
+					;      //  to 13000
+
+					if (verb==say && wd2!=null) verb=0;
+					if (verb==say)
 					{next_label=4090; continue;}
-				if (tally==0 && loc>=15 && loc!=33) clock1--;
-				if (clock1==0)
-				{       closing();                      //  to 10000     
-					{next_label=19999; continue;}
-				}
-				if (clock1<0) clock2--;
-				if (clock2==0)
-				{       
-					caveclose();            //  to 11000             
-					{next_label=2; continue;} //  back to 2            
-				}
-				if (prop[lamp]==1) limit--;
-				if (limit<=30 && here(batter) && prop[batter]==0
-					&& here(lamp))
-				{       
-					rspeak(188);            //  12000                
-					prop[batter]=1;
-					if (toting(batter)) drop(batter,loc);
-					limit=limit+2500;
-					lmwarn=false;
-					{next_label=19999; continue;}
-				}
-				if (limit==0)
-				{       
-					limit = -1;             //  12400                
-					prop[lamp]=0;
-					rspeak(184);
-					{next_label=19999; continue;}
-				}
-				if (limit<0&&loc<=8)
-				{       
-					rspeak(185);            //  12600                
-					gaveup=true;
-					done(2);                //  to 20000             
-				}
-				if (limit<=30)
-				{   
-					if (lmwarn|| !here(lamp)) {next_label=19999; continue;}  // 12200
-					lmwarn=true;
-					spk=187;
-					if (place[batter]==0) spk=183;
-					if (prop[batter]==1) spk=189;
-					rspeak(spk);
-				}
-			case 19999:
-				k=43;
-				if (liqloc(loc)==water) k=70;
-				if (weq(wd1,"enter") &&
-					(weq(wd2,"strea")||weq(wd2,"water")))
-					{next_label=L_PROMPT_K; continue;}
-				if (weq(wd1,"enter") && wd2!=null)
-					{next_label=2800; continue;}
-				if ((!weq(wd1,"water")&&!weq(wd1,"oil"))
-					|| (!weq(wd2,"plant")&&!weq(wd2,"door")))
-					{next_label=2610; continue;}
-				if (at(vocab(wd2,Usage.OBJECT))) wd2 = "pour";
-		
-			case 2610:
-				if (weq(wd1,"west"))
-				if (++iwest==10) rspeak(17);
-			case 2630:
-			{
-				int temp_i = vocab(wd1, Usage.ANY);
-				if (temp_i == -1) {
-					spk = 60;                 //  3000
-					if (pct(20)) spk = 61;
-					if (pct(20)) spk = 13;
-					rspeak(spk);
+					if (tally==0 && loc>=15 && loc!=33) clock1--;
+					if (clock1==0)
+					{       closing();                      //  to 10000
+						{next_label=19999; continue;}
+					}
+					if (clock1<0) clock2--;
+					if (clock2==0)
 					{
-						next_label = L_USER_INPUT;
-						continue;
-					}
-				}
-				k = temp_i % 1000;
-				kq = temp_i / 1000 + 1;
-				switch (kq) {
-					case 1: {
-						next_label = 8;
-						continue;
-					}
-					case 2: {
-						next_label = 5000;
-						continue;
-					}
-					case 3: {
-						next_label = 4000;
-						continue;
-					}
-					case 4: {
-						next_label = L_PROMPT_K;
-						continue;
-					}
-					default:
-						printf("Error 22");
-						exit(0);
-				}
-			}
-			case L_RESTORED:
-				switch(march())
-				{   
-					case 2:
+						caveclose();            //  to 11000
 						{next_label=2; continue;} //  back to 2
-					case 99:
-					switch(die(99))
-					{   
-						case 2000: {next_label=2000; continue;}
-						default: bug(111);
 					}
-					default:
-						bug(110);
-				}
-		
-			case 2800:  
-				wd1 = wd2;
-				wd2=null;
-				{next_label=2610; continue;}
-		
-			case 4000:
-				verb=k;
-				spk=actspk[verb];
-				if (wd2!=null && verb!=say)
+					if (prop[lamp]==1) limit--;
+					if (limit<=30 && here(batter) && prop[batter]==0
+						&& here(lamp))
+					{
+						rspeak(188);            //  12000
+						prop[batter]=1;
+						if (toting(batter)) drop(batter,loc);
+						limit=limit+2500;
+						lmwarn=false;
+						{next_label=19999; continue;}
+					}
+					if (limit==0)
+					{
+						limit = -1;             //  12400
+						prop[lamp]=0;
+						rspeak(184);
+						{next_label=19999; continue;}
+					}
+					if (limit<0&&loc<=8)
+					{
+						rspeak(185);            //  12600
+						gaveup=true;
+						{next_label=done(3); continue;}		//  to 20000
+					}
+					if (limit<=30)
+					{
+						if (lmwarn|| !here(lamp)) {next_label=19999; continue;}  // 12200
+						lmwarn=true;
+						spk=187;
+						if (place[batter]==0) spk=183;
+						if (prop[batter]==1) spk=189;
+						rspeak(spk);
+					}
+				case 19999:
+					k=43;
+					if (liqloc(loc)==water) k=70;
+					if (weq(wd1,"enter") &&
+						(weq(wd2,"strea")||weq(wd2,"water")))
+					{next_label=L_PROMPT_K; continue;}
+					if (weq(wd1,"enter") && wd2!=null)
 					{next_label=2800; continue;}
-				if (verb==say) obj= wd2.charAt(0); //TODO::CHECK THIS *wd2;
-				if (obj!=0) {next_label=4090; continue;}
-			case 4080:
-				switch(verb)
-				{   case 1:                     //  take = 8010          
+					if ((!weq(wd1,"water")&&!weq(wd1,"oil"))
+						|| (!weq(wd2,"plant")&&!weq(wd2,"door")))
+					{next_label=2610; continue;}
+					if (at(vocab(wd2,Usage.OBJECT))) wd2 = "pour";
+
+				case 2610:
+					if (weq(wd1,"west"))
+						if (++iwest==10) rspeak(17);
+				case 2630:
+				{
+					int temp_i = vocab(wd1, Usage.ANY);
+					if (temp_i == -1) {
+						spk = 60;                 //  3000
+						if (pct(20)) spk = 61;
+						if (pct(20)) spk = 13;
+						rspeak(spk);
+						{
+							next_label = L_USER_INPUT;
+							continue;
+						}
+					}
+					k = temp_i % 1000;
+					kq = temp_i / 1000 + 1;
+					switch (kq) {
+						case 1: {
+							next_label = 8;
+							continue;
+						}
+						case 2: {
+							next_label = 5000;
+							continue;
+						}
+						case 3: {
+							next_label = 4000;
+							continue;
+						}
+						case 4: {
+							next_label = L_PROMPT_K;
+							continue;
+						}
+						default:
+							printf("Error 22");
+							exit(0);
+					}
+				}
+				case L_RESTORED:
+					switch(march())
+					{
+						case 2:
+						{next_label=2; continue;} //  back to 2
+						case 99:
+							switch(die(99))
+							{
+								case 2000: {next_label=2000; continue;}
+								default: bug(111);
+							}
+						default:
+							bug(110);
+					}
+
+				case 2800:
+					wd1 = wd2;
+					wd2=null;
+				{next_label=2610; continue;}
+
+				case 4000:
+					verb=k;
+					spk=actspk[verb];
+					if (wd2!=null && verb!=say)
+					{next_label=2800; continue;}
+					if (verb==say) obj= wd2.charAt(0); //TODO::CHECK THIS *wd2;
+					if (obj!=0) {next_label=4090; continue;}
+				case 4080:
+					switch(verb)
+					{   case 1:                     //  take = 8010
 						if (atloc[loc]==0 || link[atloc[loc]] != 0)
-							{next_label=L_ASK_WHAT_OBJ; continue;}
+						{next_label=L_ASK_WHAT_OBJ; continue;}
 						for (int temp_i=1; temp_i<=5; temp_i++)
 						{
 							if (dwarfLoc[temp_i]==loc&&dflag>=2)
-								{next_label=L_ASK_WHAT_OBJ; continue;}
+							{next_label=L_ASK_WHAT_OBJ; continue;}
 						}
 						obj=atloc[loc];
-						{next_label=9010; continue;}
-					case 2: case 3: case 9:     //  L_ASK_WHAT_OBJ : drop,say,wave
-					case 10: case 16: case 17:  //  calm,rub,toss        
-					case 19: case 21: case 28:  //  find,feed,break      
-					case 29:                    //  wake                 
+					{next_label=9010; continue;}
+						case 2: case 3: case 9:     //  L_ASK_WHAT_OBJ : drop,say,wave
+						case 10: case 16: case 17:  //  calm,rub,toss
+						case 19: case 21: case 28:  //  find,feed,break
+						case 29:                    //  wake
 						{next_label=L_ASK_WHAT_OBJ; continue;}
-					case 4: case 6:             //  8040 open,lock       
-						spk=28;
-						if (here(clam)) obj=clam;
-						if (here(oyster)) obj=oyster;
-						if (at(door)) obj=door;
-						if (at(grate)) obj=grate;
-						if (obj!=0 && here(chain)) {next_label=L_ASK_WHAT_OBJ; continue;}
-						if (here(chain)) obj=chain;
-						if (obj==0) {next_label=L_PROMPT_SPK; continue;}
-						{next_label=9040; continue;}
-					case 5: {next_label=L_PROMPT_OK; continue;}         //  nothing              
-					case 7: {next_label=9070; continue;}         //  on                   
-					case 8: {next_label=9080; continue;}         //  off                  
-					case 11: {next_label=L_ASK_WHAT_OBJ; continue;}        //  walk
-					case 12: {next_label=L_TRY_KILL; continue;}        //  kill
-					case 13: {next_label=9130; continue;}        //  pour                 
-					case 14:                    //  eat: 8140            
-						if (!here(food)) {next_label=L_ASK_WHAT_OBJ; continue;}
+						case 4: case 6:             //  8040 open,lock
+							spk=28;
+							if (here(clam)) obj=clam;
+							if (here(oyster)) obj=oyster;
+							if (at(door)) obj=door;
+							if (at(grate)) obj=grate;
+							if (obj!=0 && here(chain)) {next_label=L_ASK_WHAT_OBJ; continue;}
+							if (here(chain)) obj=chain;
+							if (obj==0) {next_label=L_PROMPT_SPK; continue;}
+							else {next_label=9040; continue;}
+						case 5: {next_label=L_PROMPT_OK; continue;}         //  nothing
+						case 7: {next_label=9070; continue;}         //  on
+						case 8: {next_label=9080; continue;}         //  off
+						case 11: {next_label=L_ASK_WHAT_OBJ; continue;}        //  walk
+						case 12: {next_label=L_TRY_KILL; continue;}        //  kill
+						case 13: {next_label=9130; continue;}        //  pour
+						case 14:                    //  eat: 8140
+							if (!here(food)) {next_label=L_ASK_WHAT_OBJ; continue;}
 						{next_label=8142; continue;}
-					case 15: {next_label=9150; continue;}        //  drink                
-					case 18:                    //  quit: 8180           
-						gaveup=yes(22,54,54);
-						if (gaveup) done(2);    //  8185                 
-						{next_label=L_NEXT_MOVE; continue;}
-					case 20:                    //  invent=8200          
-						spk=98;
-						for (int objid=1; objid<=LAST_OBJECT_INDEX; objid++)
-						{       if (objid!=bear && toting(objid))
+						case 15: {next_label=9150; continue;}        //  drink
+						case 18:                    //  quit: 8180
+						{next_label=initiateYes(22,54,54, L_CHECK_FOR_QUIT); continue;}
+//
+						case 20:                    //  invent=8200
+							spk=98;
+							for (int objid=1; objid<=LAST_OBJECT_INDEX; objid++)
+							{       if (objid!=bear && toting(objid))
 							{       if (spk==98) rspeak(99);
 								blklin=false;
 								pspeak(objid,-1);
 								blklin=true;
 								spk=0;
 							}
-						}
-						if (toting(bear)) spk=141;
+							}
+							if (toting(bear)) spk=141;
 						{next_label=L_PROMPT_SPK; continue;}
-					case 22: {next_label=9220; continue;}        //  fill                 
-					case 23: {next_label=9230; continue;}        //  blast                
-					case 24:                    //  score: 8240          
-						isScoring =true;
-						printf(
-							"If you were to quit now, you would score {0} out"
-							+" of a possible {1}",
-							score(),
-							mxscor
-						);
-						isScoring =false;
-						gaveup=yes(143,54,54);
-						if (gaveup) done(2);
-						{next_label=L_NEXT_MOVE; continue;}
-					case 25:                    //  foo: 8250            
-						k=vocab(wd1, Usage.MAGIC);
-						spk=42;
-						if (foobar==1-k) {next_label=8252; continue;}
-						if (foobar!=0) spk=151;
+						case 22: {next_label=9220; continue;}        //  fill
+						case 23: {next_label=9230; continue;}        //  blast
+						case 24:                    //  score: 8240
+							isScoring =true;
+							printf(
+								"If you were to quit now, you would score {0} out"
+									+" of a possible {1}",
+								score(),
+								mxscor
+							);
+							isScoring =false;
+							{next_label=initiateYes(143,54,54, L_CHECK_FOR_REALLY_QUIT); continue;}
+						case 25:                    //  foo: 8250
+							k=vocab(wd1, Usage.MAGIC);
+							spk=42;
+							if (foobar==1-k) {next_label=8252; continue;}
+							if (foobar!=0) spk=151;
 						{next_label=L_PROMPT_SPK; continue;}
-					case 26:                    //  brief=8260           
-						spk=156;
-						abbnum=10000;
-						detail=3;
+						case 26:                    //  brief=8260
+							spk=156;
+							abbnum=10000;
+							detail=3;
 						{next_label=L_PROMPT_SPK; continue;}
-					case 27:                    //  read=8270            
-						if (here(magzin)) obj=magzin;
-						if (here(tablet)) obj=obj*100+tablet;
-						if (here(messag)) obj=obj*100+messag;
-						if (isClosed &&toting(oyster)) obj=oyster;
-						if (obj>FIXED_OBJECT_OFFSET || obj==0 || dark(0) )
-						{
-							{next_label=L_ASK_WHAT_OBJ; continue;}
-						}
+						case 27:                    //  read=8270
+							if (here(magzin)) obj=magzin;
+							if (here(tablet)) obj=obj*100+tablet;
+							if (here(messag)) obj=obj*100+messag;
+							if (isClosed &&toting(oyster)) obj=oyster;
+							if (obj>FIXED_OBJECT_OFFSET || obj==0 || dark(0) )
+							{
+								{next_label=L_ASK_WHAT_OBJ; continue;}
+							}
 						{next_label=9270; continue;}
-					case 30:                    //  suspend=8300         
-						spk=201;
-						if (demo) {next_label=L_PROMPT_SPK; continue;}
-						printf(
-							"I can suspend your adventure for you so you "
-							+"can resume later, but"
-						);
-						printf(
-							"you will have to wait at least {0} minutes before"
-							+" continuing.",
-							latncy
-						);
-						if (!yes(200,54,54)) {next_label=L_NEXT_MOVE; continue;}
-						saved_last_usage = datime();
-						// TODO: What do we do here????
-//						ciao(path);	          //  Do we quit?
-						{next_label=2; continue;} //  Maybe not
-					case 31:                    //  hours=8310           
-						printf(
-							"Colossal cave is isClosed 9am-5pm Mon through "
-							+"Fri except holidays."
-						);
+						case 30:                    //  suspend=8300
+							spk=201;
+							if (demo) {next_label=L_PROMPT_SPK; continue;}
+							printf(
+								"I can suspend your adventure for you so you "
+									+"can resume later, but"
+							);
+							printf(
+								"you will have to wait at least {0} minutes before"
+									+" continuing.",
+								latncy
+							);
+							{next_label=initiateYes(200,54,54, L_CHECK_FOR_ACCEPTABLE); continue;}
+						case 31:                    //  hours=8310
+							printf(
+								"Colossal cave is isClosed 9am-5pm Mon through "
+									+"Fri except holidays."
+							);
 						{next_label=L_NEXT_MOVE; continue;}
-					default: bug(23);
-				}
-			case L_ASK_WHAT_OBJ:
-				printf("{0} what?",wd1);
-				obj=0;
+						default: bug(23);
+					}
+				case L_CHECK_FOR_REALLY_QUIT:
+					gaveup=queryState.saidYes();
+					if (gaveup) {next_label=done(2); continue;}
+					{next_label=L_NEXT_MOVE; continue;}
+				case L_CHECK_FOR_QUIT:
+					gaveup=queryState.saidYes();
+					if (gaveup) {next_label=done(2); continue;}    //  8185
+					{next_label=L_NEXT_MOVE; continue;}
+				case L_CHECK_FOR_ACCEPTABLE:
+					if (!queryState.saidYes()) {next_label=L_NEXT_MOVE; continue;}
+					saved_last_usage = datime();
+					// TODO: What do we do here????
+//						ciao(path);	          //  Do we quit?
+					{next_label=L_NEWGAME; continue;} //  Maybe not
+				case L_ASK_WHAT_OBJ:
+					printf("{0} what?",wd1);
+					obj=0;
 				{next_label=L_USER_INPUT; continue;}
-			case 8142:
-				dstroy(food);
-				spk=72;
+				case 8142:
+					dstroy(food);
+					spk=72;
 				{next_label=L_PROMPT_SPK; continue;}
-			case 8252:
-				foobar=k;
-				if (k!=4) {next_label=L_PROMPT_OK; continue;}
-				foobar=0;
-				if (place[eggs]==plac[eggs]
-					||(toting(eggs)&&loc==plac[eggs])) {next_label=L_PROMPT_SPK; continue;}
-				if (place[eggs]==0&&place[troll]==0&&prop[troll]==0)
-					prop[troll]=1;
-				k=2;
-				if (here(eggs)) k=1;
-				if (loc==plac[eggs]) k=0;
-				move(eggs,plac[eggs]);
-				pspeak(eggs,k);
+				case 8252:
+					foobar=k;
+					if (k!=4) {next_label=L_PROMPT_OK; continue;}
+					foobar=0;
+					if (place[eggs]==plac[eggs]
+						||(toting(eggs)&&loc==plac[eggs])) {next_label=L_PROMPT_SPK; continue;}
+					if (place[eggs]==0&&place[troll]==0&&prop[troll]==0)
+						prop[troll]=1;
+					k=2;
+					if (here(eggs)) k=1;
+					if (loc==plac[eggs]) k=0;
+					move(eggs,plac[eggs]);
+					pspeak(eggs,k);
 				{next_label=L_NEXT_MOVE; continue;}
 
-			case 4090:
-			// FLATTEN THIS SWITCH;
-				switch(verb)
-				{
-				case 1:                               
-				case 2:                     //  drop = 9020          
-				case 3:
-				case 4:
-				case 5:
-				case 6:                      
-				case 7:                                 
-				case 8:                                       
-				case 9:                     //  off 
-				case 12:                                     
-				case 13:                    //  pour                 
-				case 14:
-				case 15:                    
-				case 16:
-				case 17:
-				case 19:
-				case 20:
-				case 21:                                     
-				case 22:	                                     
-				case 23:                                    
-				case 27:                                     
-				case 28:                                    
-				case 29:                    
-					{next_label=(9000+verb*10); continue;}
-					
-				case 10: case 11: case 18:  //  calm, walk, quit     
-				case 24: case 25: case 26:  //  score, foo, brief    
-				case 30: case 31:           //  suspend, hours       
-					 {next_label=L_PROMPT_SPK; continue;}
-				default: 
-					bug(24);
-					
-				}
-			case 9010:	//  take = 9010
-				switch(trtake())
-				{   
-					case L_PROMPT_SPK: {next_label=L_PROMPT_SPK; continue;}
-					case 9220: {next_label=9220; continue;}
-					case L_PROMPT_OK: {next_label=L_PROMPT_OK; continue;}
-					case L_NEXT_MOVE: {next_label=L_NEXT_MOVE; continue;}
-					default: bug(102);
-				}
-			case 9020:	//  drop = 9020
-				switch(trdrop())
-				{   
-					case L_PROMPT_SPK: {next_label=L_PROMPT_SPK; continue;}
-					case 19000: done(3);
-					case L_NEXT_MOVE: {next_label=L_NEXT_MOVE; continue;}
-					default: bug(105);
-				}
-			case 9030:      
-				switch(trsay())
-				{   
-					case L_NEXT_MOVE: {next_label=L_NEXT_MOVE; continue;}
-					case 2630: {next_label=2630; continue;}
-					default: bug(107);
-				}
-			case 9040: 	//  open, close     
-			case 9060:      
-				switch(tropen())
-				{   case L_PROMPT_SPK: {next_label=L_PROMPT_SPK; continue;}
-					case L_PROMPT_K: {next_label=L_PROMPT_K; continue;}
-					default: bug(106);
-				}
-			case 9050:	//  nothing      
-				{next_label=L_PROMPT_OK; continue;}              
-			case 9070:	//  on   9070
-				if (!here(lamp))  {next_label=L_PROMPT_SPK; continue;}
-				spk=184;
-				if (limit<0) {next_label=L_PROMPT_SPK; continue;}
-				prop[lamp]=1;
-				rspeak(39);
-				if (wzdark) {next_label=2000; continue;}
-				{next_label=L_NEXT_MOVE; continue;}
-		
-			case 9080:	//  off  
-				if (!here(lamp)) {next_label=L_PROMPT_SPK; continue;}
-				prop[lamp]=0;
-				rspeak(40);
-				if (dark(0)) rspeak(16);
-				{next_label=L_NEXT_MOVE; continue;}
-		
-			case 9090:	//  wave                 
-			{
-				if ((!toting(obj))&&(obj!=rod||!toting(rod2)))
-									spk=29;
-				if (obj!=rod||!at(fissur)||!toting(obj)|| isClosing)
+				case 4090:
+					// FLATTEN THIS SWITCH;
+					switch(verb)
+					{
+						case 1:
+						case 2:                     //  drop = 9020
+						case 3:
+						case 4:
+						case 5:
+						case 6:
+						case 7:
+						case 8:
+						case 9:                     //  off
+						case 12:
+						case 13:                    //  pour
+						case 14:
+						case 15:
+						case 16:
+						case 17:
+						case 19:
+						case 20:
+						case 21:
+						case 22:
+						case 23:
+						case 27:
+						case 28:
+						case 29:
+						{next_label=(9000+verb*10); continue;}
+
+						case 10: case 11: case 18:  //  calm, walk, quit
+						case 24: case 25: case 26:  //  score, foo, brief
+						case 30: case 31:           //  suspend, hours
 					{next_label=L_PROMPT_SPK; continue;}
-				prop[fissur]=1-prop[fissur];
-				pspeak(fissur,2-prop[fissur]);
-				{next_label=L_NEXT_MOVE; continue;}
-			}
-			case L_TRY_KILL:	//  kill
-			{
-				int dwarfid;
-				for (dwarfid = 1; dwarfid <= 5; dwarfid++)
-					if (dwarfLoc[dwarfid] == loc && dflag >= 2) break;
-				if (dwarfid == 6) dwarfid = 0;
-				if (obj == 0)                     //  9122
-				{
-					if (dwarfid != 0) obj = dwarf;
-					if (here(snake)) obj = obj * 100 + snake;
-					if (at(dragon) && prop[dragon] == 0) obj = obj * 100 + dragon;
-					if (at(troll)) obj = obj * 100 + troll;
-					if (here(bear) && prop[bear] == 0) obj = obj * 100 + bear;
-					if (obj > FIXED_OBJECT_OFFSET) {
-						next_label = L_ASK_WHAT_OBJ;
-						continue;
+						default:
+							bug(24);
+
 					}
-					if (obj == 0) {
-						if (here(bird) && verb != vthrow) obj = bird;
-						if (here(clam) || here(oyster)) obj = 100 * obj + clam;
-						if (obj > 100) {
+				case 9010:	//  take = 9010
+					switch(trtake())
+					{
+						case L_PROMPT_SPK: {next_label=L_PROMPT_SPK; continue;}
+						case 9220: {next_label=9220; continue;}
+						case L_PROMPT_OK: {next_label=L_PROMPT_OK; continue;}
+						case L_NEXT_MOVE: {next_label=L_NEXT_MOVE; continue;}
+						default: bug(102);
+					}
+				case 9020:	//  drop = 9020
+					switch(trdrop())
+					{
+						case L_PROMPT_SPK: {next_label=L_PROMPT_SPK; continue;}
+						case 19000: {next_label=done(3); continue;}
+						case L_NEXT_MOVE: {next_label=L_NEXT_MOVE; continue;}
+						default: bug(105);
+					}
+				case 9030:
+					switch(trsay())
+					{
+						case L_NEXT_MOVE: {next_label=L_NEXT_MOVE; continue;}
+						case 2630: {next_label=2630; continue;}
+						default: bug(107);
+					}
+				case 9040: 	//  open, close
+				case 9060:
+					switch(tropen())
+					{   case L_PROMPT_SPK: {next_label=L_PROMPT_SPK; continue;}
+						case L_PROMPT_K: {next_label=L_PROMPT_K; continue;}
+						default: bug(106);
+					}
+				case 9050:	//  nothing
+				{next_label=L_PROMPT_OK; continue;}
+				case 9070:	//  on   9070
+					if (!here(lamp))  {next_label=L_PROMPT_SPK; continue;}
+					spk=184;
+					if (limit<0) {next_label=L_PROMPT_SPK; continue;}
+					prop[lamp]=1;
+					rspeak(39);
+					if (wzdark) {next_label=2000; continue;}
+				{next_label=L_NEXT_MOVE; continue;}
+
+				case 9080:	//  off
+					if (!here(lamp)) {next_label=L_PROMPT_SPK; continue;}
+					prop[lamp]=0;
+					rspeak(40);
+					if (dark(0)) rspeak(16);
+				{next_label=L_NEXT_MOVE; continue;}
+
+				case 9090:	//  wave
+				{
+					if ((!toting(obj))&&(obj!=rod||!toting(rod2)))
+						spk=29;
+					if (obj!=rod||!at(fissur)||!toting(obj)|| isClosing)
+					{next_label=L_PROMPT_SPK; continue;}
+					prop[fissur]=1-prop[fissur];
+					pspeak(fissur,2-prop[fissur]);
+					{next_label=L_NEXT_MOVE; continue;}
+				}
+				case L_TRY_KILL:	//  kill
+				{
+					int dwarfid;
+					for (dwarfid = 1; dwarfid <= 5; dwarfid++)
+						if (dwarfLoc[dwarfid] == loc && dflag >= 2) break;
+					if (dwarfid == 6) dwarfid = 0;
+					if (obj == 0)                     //  9122
+					{
+						if (dwarfid != 0) obj = dwarf;
+						if (here(snake)) obj = obj * 100 + snake;
+						if (at(dragon) && prop[dragon] == 0) obj = obj * 100 + dragon;
+						if (at(troll)) obj = obj * 100 + troll;
+						if (here(bear) && prop[bear] == 0) obj = obj * 100 + bear;
+						if (obj > FIXED_OBJECT_OFFSET) {
 							next_label = L_ASK_WHAT_OBJ;
 							continue;
 						}
+						if (obj == 0) {
+							if (here(bird) && verb != vthrow) obj = bird;
+							if (here(clam) || here(oyster)) obj = 100 * obj + clam;
+							if (obj > 100) {
+								next_label = L_ASK_WHAT_OBJ;
+								continue;
+							}
+						}
 					}
-				}
-				if (obj == bird)                  //  9124
-				{
-					spk = 137;
-					if (isClosed) {
+					if (obj == bird)                  //  9124
+					{
+						spk = 137;
+						if (isClosed) {
+							next_label = L_PROMPT_SPK;
+							continue;
+						}
+						dstroy(bird);
+						prop[bird] = 0;
+						if (place[snake] == plac[snake]) tally2++;
+						spk = 45;
+					}
+					if (obj == 0) spk = 44;             //  9125
+					if (obj == clam || obj == oyster) spk = 150;
+					if (obj == snake) spk = 46;
+					if (obj == dwarf) spk = 49;
+					if (obj == dwarf && isClosed) {
+						next_label = 19000;
+						continue;
+					}
+					if (obj == dragon) spk = 147;
+					if (obj == troll) spk = 157;
+					if (obj == bear) spk = 165 + (prop[bear] + 1) / 2;
+					if (obj != dragon || prop[dragon] != 0) {
 						next_label = L_PROMPT_SPK;
 						continue;
 					}
-					dstroy(bird);
-					prop[bird] = 0;
-					if (place[snake] == plac[snake]) tally2++;
-					spk = 45;
-				}
-				if (obj == 0) spk = 44;             //  9125
-				if (obj == clam || obj == oyster) spk = 150;
-				if (obj == snake) spk = 46;
-				if (obj == dwarf) spk = 49;
-				if (obj == dwarf && isClosed) {
-					next_label = 19000;
-					continue;
-				}
-				if (obj == dragon) spk = 147;
-				if (obj == troll) spk = 157;
-				if (obj == bear) spk = 165 + (prop[bear] + 1) / 2;
-				if (obj != dragon || prop[dragon] != 0) {
-					next_label = L_PROMPT_SPK;
-					continue;
-				}
-				rspeak(49);
-				verb = 0;
-				obj = 0;
+					rspeak(49);
+					verb = 0;
+					obj = 0;
 //				DP("GETIN @loc({0})", loc);
 //				getin();
-				return new CrankOutput(CrankOutput.Type.getInput, L_TRY_KILL_RESPONSE);
-			}
-			case L_TRY_KILL_RESPONSE: {
-				parseUserInputLine(crankInput.userInput);
+					return new CrankOutput(CrankOutput.Type.getInput, L_TRY_KILL_RESPONSE);
+				}
+				case L_TRY_KILL_RESPONSE: {
+					parseUserInputLine(crankInput.userInput);
 
-				if (!weq(wd1,"y")&&!weq(wd1,"yes")) {next_label=L_PROCESS_USER_INPUT; continue;}
-				pspeak(dragon,1);
-				prop[dragon]=2;
-				prop[rug]=0;
-				k=(plac[dragon]+fixd[dragon])/2;
-				move(dragon+FIXED_OBJECT_OFFSET,-1);
-				move(rug+FIXED_OBJECT_OFFSET,0);
-				move(dragon,k);
-				move(rug,k);
-				for (obj=1; obj<=LAST_OBJECT_INDEX; obj++)
-					if (place[obj]==plac[dragon]||place[obj]==fixd[dragon])
-						move(obj,k);
-				loc=k;
-				k=0;
-				{next_label=8; continue;}
-			}
+					if (!weq(wd1,"y")&&!weq(wd1,"yes")) {next_label=L_PROCESS_USER_INPUT; continue;}
+					pspeak(dragon,1);
+					prop[dragon]=2;
+					prop[rug]=0;
+					k=(plac[dragon]+fixd[dragon])/2;
+					move(dragon+FIXED_OBJECT_OFFSET,-1);
+					move(rug+FIXED_OBJECT_OFFSET,0);
+					move(dragon,k);
+					move(rug,k);
+					for (obj=1; obj<=LAST_OBJECT_INDEX; obj++)
+						if (place[obj]==plac[dragon]||place[obj]==fixd[dragon])
+							move(obj,k);
+					loc=k;
+					k=0;
+					{next_label=8; continue;}
+				}
 
-			case 9130:	//  pour
-				if (obj==bottle||obj==0) obj=liq(0);
-				if (obj==0) {next_label=L_ASK_WHAT_OBJ; continue;}
-				if (!toting(obj)) {next_label=L_PROMPT_SPK; continue;}
-				spk=78;
-				if (obj!=oil&&obj!=water) {next_label=L_PROMPT_SPK; continue;}
-				prop[bottle]=1;
-				place[obj]=0;
-				spk=77;
-				if (!(at(plant)||at(door))) {next_label=L_PROMPT_SPK; continue;}
-				if (at(door))
-				{       prop[door]=0;   //  9132                 
-					if (obj==oil) prop[door]=1;
-					spk=113+prop[door];
-					{next_label=L_PROMPT_SPK; continue;}
-				}
-				spk=112;
-				if (obj!=water) {next_label=L_PROMPT_SPK; continue;}
-				pspeak(plant,prop[plant]+1);
-				prop[plant]=(prop[plant]+2)% 6;
-				prop[plant2]=prop[plant]/2;
-				k=0;
-				{next_label=8; continue;}
-			case 9140:	//9140 - eat           
-				if (obj==food) {next_label=8142; continue;}
-				if (obj==bird||obj==snake||obj==clam||obj==oyster
-					||obj==dwarf||obj==dragon||obj==troll
-					||obj==bear) spk=71;
-				{next_label=L_PROMPT_SPK; continue;}
-			case 9150:	//  9150 - drink
-				if (obj==0&&liqloc(loc)!=water&&(liq(0)!=water
-					||!here(bottle))) {next_label=L_ASK_WHAT_OBJ; continue;}
-				if (obj!=0&&obj!=water) spk=110;
-				if (spk==110||liq(0)!=water||!here(bottle))
-					{next_label=L_PROMPT_SPK; continue;}
-				prop[bottle]=1;
-				place[water]=0;
-				spk=74;
-				{next_label=L_PROMPT_SPK; continue;}
-			case 9160:	//  9160: rub
-				if (obj!=lamp) spk=76;
-				{next_label=L_PROMPT_SPK; continue;}
-			case 9170:	//  9170: throw
-				switch(trtoss())
-				{   
-					case L_PROMPT_SPK: {next_label=L_PROMPT_SPK; continue;}
-					case 9020: {next_label=9020; continue;}
-					case L_TRY_KILL: {next_label=L_TRY_KILL; continue;}
-					case 8: {next_label=8; continue;}
-					case 9210: {next_label=9210; continue;}
-					default: bug(113);
-				}
-			case 9190:	//  9190: find
-			case 9200:	// , invent
-				if (at(obj)||(liq(0)==obj&&at(bottle))
-					||k==liqloc(loc)) spk=94;
-				for (int temp_i=1; temp_i<=5; temp_i++) {
-					if (dwarfLoc[temp_i]==loc&&dflag>=2&&obj==dwarf) spk=94;
-				}
-				if (isClosed) spk=138;
-				if (toting(obj)) spk=24;
-				{next_label=L_PROMPT_SPK; continue;}
-			case 9210:	//  feed
-				switch(trfeed())
-				{   case L_PROMPT_SPK: {next_label=L_PROMPT_SPK; continue;}
-					default: bug(114);
-				}
-			case 9220:	//  fill
-				switch(trfill())
-				{   case L_PROMPT_SPK: {next_label=L_PROMPT_SPK; continue;}
-					case L_ASK_WHAT_OBJ: {next_label=L_ASK_WHAT_OBJ; continue;}
-					case 9020: {next_label=9020; continue;}
-					default: bug(115);
-				}
-			case 9230:	//  blast
-				if (prop[rod2]<0||!isClosed) {next_label=L_PROMPT_SPK; continue;}
-				bonus=133;
-				if (loc==115) bonus=134;
-				if (here(rod2)) bonus=135;
-				rspeak(bonus);
-				done(2);
-			case 9270:	//  read
-				if (dark(0)) {next_label=5190; continue;}
-				if (obj==magzin) spk=190;
-				if (obj==tablet) spk=196;
-				if (obj==messag) spk=191;
-				if (obj==oyster&&hinted[2]&&toting(oyster)) spk=194;
-				if (obj!=oyster||hinted[2]||!toting(oyster)
-					||!isClosed) {next_label=L_PROMPT_SPK; continue;}
-				hinted[2]=yes(192,193,54);
-				{next_label=L_NEXT_MOVE; continue;}
-			case 9280:	//  break
-				if (obj==mirror) spk=148;
-				if (obj==vase&&prop[vase]==0)
-				{       spk=198;
-					if (toting(vase)) drop(vase,loc);
-					prop[vase]=2;
-					fixed[vase]= -1;
-					{next_label=L_PROMPT_SPK; continue;}
-				}
-				if (obj!=mirror||!isClosed) {next_label=L_PROMPT_SPK; continue;}
-				rspeak(197);
-				done(3);
-		
-			case 9290:	//  wake
-				if (obj!=dwarf||!isClosed) {next_label=L_PROMPT_SPK; continue;}
-				rspeak(199);
-				done(3);
-		
-				// END FLATTEND SWITCH }
-		
-			case 5000:
-				obj=k;
-				if (fixed[k]!=loc && !here(k))
-				{
-					{next_label=5100; continue;}
-				}
-			case 5010:
-				if (wd2!=null) {next_label=2800; continue;}
-				if (verb!=0) {next_label=4090; continue;}
-				printf("What do you want to do with the {0}?",wd1);
-				{next_label=L_USER_INPUT; continue;}
-			case 5100:  
-				if (k!=grate) {next_label=5110; continue;}
-				if (loc==1||loc==4||loc==7) k=dprssn;
-				if (loc>9&&loc<15) k=entrnc;
-				if (k!=grate) {next_label=8; continue;}
-			case 5110:
-				if (k!=dwarf)
-				{
-					{next_label=5120; continue;}
-				}
-				for (int temp_i=1; temp_i<=5; temp_i++)
-				{
-					if (dwarfLoc[temp_i]==loc&&dflag>=2)
-					{
-						{next_label=5010; continue;}
+				case 9130:	//  pour
+					if (obj==bottle||obj==0) obj=liq(0);
+					if (obj==0) {next_label=L_ASK_WHAT_OBJ; continue;}
+					if (!toting(obj)) {next_label=L_PROMPT_SPK; continue;}
+					spk=78;
+					if (obj!=oil&&obj!=water) {next_label=L_PROMPT_SPK; continue;}
+					prop[bottle]=1;
+					place[obj]=0;
+					spk=77;
+					if (!(at(plant)||at(door))) {next_label=L_PROMPT_SPK; continue;}
+					if (at(door))
+					{       prop[door]=0;   //  9132
+						if (obj==oil) prop[door]=1;
+						spk=113+prop[door];
+						{next_label=L_PROMPT_SPK; continue;}
 					}
-				}
-			case 5120:
-				if ((liq(0)==k&&here(bottle))||k==liqloc(loc)) {next_label=5010; continue;}
-				if (obj!=plant||!at(plant2)||prop[plant2]==0) {next_label=5130; continue;}
-				obj=plant2;
-				{next_label=5010; continue;}
-			case 5130:
-				if (obj!=knife||knfloc!=loc) {next_label=5140; continue;}
-				knfloc = -1;
-				spk=116;
+					spk=112;
+					if (obj!=water) {next_label=L_PROMPT_SPK; continue;}
+					pspeak(plant,prop[plant]+1);
+					prop[plant]=(prop[plant]+2)% 6;
+					prop[plant2]=prop[plant]/2;
+					k=0;
+				{next_label=8; continue;}
+				case 9140:	//9140 - eat
+					if (obj==food) {next_label=8142; continue;}
+					if (obj==bird||obj==snake||obj==clam||obj==oyster
+						||obj==dwarf||obj==dragon||obj==troll
+						||obj==bear) spk=71;
 				{next_label=L_PROMPT_SPK; continue;}
-			case 5140:
-				if (obj!=rod||!here(rod2)) {next_label=5190; continue;}
-				obj=rod2;
+				case 9150:	//  9150 - drink
+					if (obj==0&&liqloc(loc)!=water&&(liq(0)!=water
+						||!here(bottle))) {next_label=L_ASK_WHAT_OBJ; continue;}
+					if (obj!=0&&obj!=water) spk=110;
+					if (spk==110||liq(0)!=water||!here(bottle))
+					{next_label=L_PROMPT_SPK; continue;}
+					prop[bottle]=1;
+					place[water]=0;
+					spk=74;
+				{next_label=L_PROMPT_SPK; continue;}
+				case 9160:	//  9160: rub
+					if (obj!=lamp) spk=76;
+				{next_label=L_PROMPT_SPK; continue;}
+				case 9170:	//  9170: throw
+					switch(trtoss())
+					{
+						case L_PROMPT_SPK: {next_label=L_PROMPT_SPK; continue;}
+						case 9020: {next_label=9020; continue;}
+						case L_TRY_KILL: {next_label=L_TRY_KILL; continue;}
+						case 8: {next_label=8; continue;}
+						case 9210: {next_label=9210; continue;}
+						default: bug(113);
+					}
+				case 9190:	//  9190: find
+				case 9200:	// , invent
+					if (at(obj)||(liq(0)==obj&&at(bottle))
+						||k==liqloc(loc)) spk=94;
+					for (int temp_i=1; temp_i<=5; temp_i++) {
+						if (dwarfLoc[temp_i]==loc&&dflag>=2&&obj==dwarf) spk=94;
+					}
+					if (isClosed) spk=138;
+					if (toting(obj)) spk=24;
+				{next_label=L_PROMPT_SPK; continue;}
+				case 9210:	//  feed
+					switch(trfeed())
+					{   case L_PROMPT_SPK: {next_label=L_PROMPT_SPK; continue;}
+						default: bug(114);
+					}
+				case 9220:	//  fill
+					switch(trfill())
+					{   case L_PROMPT_SPK: {next_label=L_PROMPT_SPK; continue;}
+						case L_ASK_WHAT_OBJ: {next_label=L_ASK_WHAT_OBJ; continue;}
+						case 9020: {next_label=9020; continue;}
+						default: bug(115);
+					}
+				case 9230:	//  blast
+					if (prop[rod2]<0||!isClosed) {next_label=L_PROMPT_SPK; continue;}
+					bonus=133;
+					if (loc==115) bonus=134;
+					if (here(rod2)) bonus=135;
+					rspeak(bonus);
+					next_label=done(2);
+					continue;
+				case 9270:	//  read
+					if (dark(0)) {next_label=5190; continue;}
+					if (obj==magzin) spk=190;
+					if (obj==tablet) spk=196;
+					if (obj==messag) spk=191;
+					if (obj==oyster&&hinted[2]&&toting(oyster)) spk=194;
+					if (obj!=oyster||hinted[2]||!toting(oyster)
+						||!isClosed) {next_label=L_PROMPT_SPK; continue;}
+					{next_label=initiateYes(192,193,54, 9271); continue;}
+				case 9271:	//  read
+					hinted[2]=queryState.saidYes();
+					{next_label=L_NEXT_MOVE; continue;}
+				case 9280:	//  break
+					if (obj==mirror) spk=148;
+					if (obj==vase&&prop[vase]==0)
+					{       spk=198;
+						if (toting(vase)) drop(vase,loc);
+						prop[vase]=2;
+						fixed[vase]= -1;
+						{next_label=L_PROMPT_SPK; continue;}
+					}
+					if (obj!=mirror||!isClosed) {next_label=L_PROMPT_SPK; continue;}
+					rspeak(197);
+					{next_label=done(3); continue;}
+
+				case 9290:	//  wake
+					if (obj!=dwarf||!isClosed) {next_label=L_PROMPT_SPK; continue;}
+					rspeak(199);
+					{next_label=done(3); continue;}
+
+				// END FLATTEND SWITCH }
+
+				case 5000:
+					obj=k;
+					if (fixed[k]!=loc && !here(k))
+					{
+						{next_label=5100; continue;}
+					}
+				case 5010:
+					if (wd2!=null) {next_label=2800; continue;}
+					if (verb!=0) {next_label=4090; continue;}
+					printf("What do you want to do with the {0}?",wd1);
+				{next_label=L_USER_INPUT; continue;}
+				case 5100:
+					if (k!=grate) {next_label=5110; continue;}
+					if (loc==1||loc==4||loc==7) k=dprssn;
+					if (loc>9&&loc<15) k=entrnc;
+					if (k!=grate) {next_label=8; continue;}
+				case 5110:
+					if (k!=dwarf)
+					{
+						{next_label=5120; continue;}
+					}
+					for (int temp_i=1; temp_i<=5; temp_i++)
+					{
+						if (dwarfLoc[temp_i]==loc&&dflag>=2)
+						{
+							{next_label=5010; continue;}
+						}
+					}
+				case 5120:
+					if ((liq(0)==k&&here(bottle))||k==liqloc(loc)) {next_label=5010; continue;}
+					if (obj!=plant||!at(plant2)||prop[plant2]==0) {next_label=5130; continue;}
+					obj=plant2;
 				{next_label=5010; continue;}
-			case 5190:
-				if ((verb==find||verb==invent)&&wd2==null) {next_label=5010; continue;}
-				printf("I see no {0} here",wd1);
+				case 5130:
+					if (obj!=knife||knfloc!=loc) {next_label=5140; continue;}
+					knfloc = -1;
+					spk=116;
+				{next_label=L_PROMPT_SPK; continue;}
+				case 5140:
+					if (obj!=rod||!here(rod2)) {next_label=5190; continue;}
+					obj=rod2;
+				{next_label=5010; continue;}
+				case 5190:
+					if ((verb==find||verb==invent)&&wd2==null) {next_label=5010; continue;}
+					printf("I see no {0} here",wd1);
 				{next_label=L_NEXT_MOVE; continue;}
 			}
 		}
@@ -1435,16 +1477,19 @@ public class Adv32 extends Wizard
 	{       
 		for (int hint=4; hint<=hntmax; hint++)
 		{       
-			if (hinted[hint]) continue;
-			if (!bitset(loc,hint)) hintlc[hint]= -1;
+			if (hinted[hint])
+				continue;
+			if (!bitset(loc,hint))
+				hintlc[hint]= -1;
 			hintlc[hint]++;
-			if (hintlc[hint] < getHint(hint, 1) ) continue;
+			if (hintlc[hint] < getHint(hint, 1) )
+				continue;
 			boolean goto_140010 = true;
 			
 			switch(hint)
 			{   
 				case 4:     //  40400 
-					if (prop[grate]==0&&!here(keys)) break;
+					if (prop[grate]==0 && !here(keys)) break;
 					goto_140010 = false; break;
 				case 5:     //  40500 
 					if (here(bird)&&toting(rod)&&obj==bird) break;
@@ -1453,8 +1498,10 @@ public class Adv32 extends Wizard
 					if (here(snake)&&!here(bird)) break;
 					goto_140010 = false; break;
 				case 7:     //  40700 
-					if (atloc[loc]==0&&atloc[oldloc]==0
-						&& atloc[oldlc2]==0&&holdng>1) break;
+					if (atloc[loc]==0
+						&& atloc[oldloc]==0
+						&& atloc[oldlc2]==0
+						&& holdng>1) break;
 					goto_140010 = false; break;
 				case 8:     //  40800 
 					if (prop[emrald]!= -1&&prop[pyram]== -1) break;
@@ -1973,7 +2020,7 @@ public class Adv32 extends Wizard
 	// ---------------------------------------------------------------------
 	//  entry=1 means goto 13000 */  /* game is over         
 	//  entry=2 means goto 20000 */ /* 3=19000 
-	void done(int entry)
+	int done(int entry)
 	{   
 		int score = score();
 		if (entry==1) mspeak(1);
@@ -2010,16 +2057,14 @@ public class Adv32 extends Wizard
 					,(diff==1) ? "." : "s."
 				);
 			}
-			exit(0);
 		}
-		exit(0);
+		return L_EXIT_GAME;
 	}
 
 	// ---------------------------------------------------------------------
 	//  label 90             
 	int die(int entry)
 	{
-		int i;
 		if (entry != 99)
 		{
 			rspeak(23);
@@ -2029,23 +2074,12 @@ public class Adv32 extends Wizard
 		{
 			rspeak(131);
 			numdie++;
-			done(2);
+			return done(2);
 		}
-		yea=yes(81+numdie*2,82+numdie*2,54);
-		numdie++;
-		if (numdie==maxdie || !yea) done(2);
-		place[water]=0;
-		place[oil]=0;
-		if (toting(lamp)) prop[lamp]=0;
-		for (i=FIXED_OBJECT_OFFSET; i>=1; i--)
-		{       if (!toting(i)) continue;
-			k=oldlc2;
-			if (i==lamp) k=1;
-			drop(i,k);
-		}
-		loc=3;
-		oldloc=loc;
-		return(2000);
+
+		return initiateYes(81+numdie*2,82+numdie*2,54, L_RESURRECT_RESPONSE);
+
+		// Response processing is at label L_RESURRECT_RESPONSE
 	}
 
 	// ======================================================================
@@ -2304,23 +2338,23 @@ public class Adv32 extends Wizard
 		throw new RuntimeException("trapdel Not Yet Implemented");
 		//signal(SIGINT,trapdel);		//  catch subsequent DELs        
 	}
-	// ---------------------------------------------------------------------
-	private void startup(  )
-	{
-		initRandomNumbers();
-	
-		demo = Start(0);
-		//?? srand((int)(time((time_t *)NULL)));	//  random seed 
-		//??  srand(371);				/* non-random seed 
-		hinted[3] = yes(65,1,0);
-		newloc=1;
-		delhit = 0;
-		limit=330;
-		if (hinted[3])
-		{
-			limit=1000;      //  better batteries if instrucs 
-		}
-	}	
+//	// ---------------------------------------------------------------------
+//	private void startup(  )
+//	{
+//		initRandomNumbers();
+//
+//		demo = Start(0);
+//		//?? srand((int)(time((time_t *)NULL)));	//  random seed
+//		//??  srand(371);				/* non-random seed
+//		hinted[3] = yes(65,1,0);
+//		newloc=1;
+//		delhit = 0;
+//		limit=330;
+//		if (hinted[3])
+//		{
+//			limit=1000;      //  better batteries if instrucs
+//		}
+//	}
 	// ---------------------------------------------------------------------
     private int restore(String s)
     {
