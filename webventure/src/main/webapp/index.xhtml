@@ -28,34 +28,43 @@
 			margin-bottom: 4px;
 		}
 		.userInput {
-			color: darkblue;
+			color: darkgreen;
+			height:22px;
 		}
 		.gameText {
-			color: darkgreen;
+			color: green;
+			height:22px;
 		}
 		#connect-container {
-			width: 400px
+			width: 900px;
 		}
 
 		#connect-container div {
 		}
 
 		#console-container {
+			border-radius: 80px;
 			width: 100%;
+			border: 1px solid black;
+			padding:25px;
+			background-color: black;
+			/*background-color: darkgreen;*/
 		}
 
 		#console {
-			border: 1px solid #CCCCCC;
-			border-right-color: #999999;
-			border-bottom-color: #999999;
-			height: 370px;
-			overflow-y: scroll;
+			height: 600px;
+			overflow-y: hidden;
 			width: 100%;
+			opaque:0;
 		}
 
 		#console p {
 			padding: 0;
 			margin: 0;
+		}
+
+		#buttonPanel {
+			text-align: center;
 		}
     </style>
 
@@ -68,11 +77,8 @@
 		<div id="console-container">
 			<div id="console"/>
 		</div>
-		<div>
-            <input type="text" id="message" style="width: 100%"></input>
-        </div>
-        <div>
-            <button id="echo">Echo message</button>
+        <div id="buttonPanel">
+            <button id="newGame">New Game</button>
         </div>
     </div>
 </div>

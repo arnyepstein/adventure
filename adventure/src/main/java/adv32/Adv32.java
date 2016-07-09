@@ -53,7 +53,7 @@ public class Adv32 extends Wizard
 		adv.processCommandLine( args );
     }
 
-	private Adv32(  )
+	public Adv32(  )
 	{
 	}
 
@@ -101,8 +101,55 @@ public class Adv32 extends Wizard
 		}
 		this.doGame( path );
 	}
-	
-    private void doGame( String path ) {
+
+	// ===========================================================================
+	static public class CrankOutput  {
+		public CrankOutput(Type type, int reentryPoint) {
+			this.type = type;
+			this.reentryPoint = reentryPoint;
+		}
+
+		private void setLines(List<String> lines) {
+			this.lines = lines;
+		}
+		public List<String> getLines() {
+			return lines;
+		}
+
+		enum Type {
+			getInput,
+			exit
+		}
+		List<String> lines;
+		Type type;
+		int reentryPoint;
+	}
+	// ===========================================================================
+	static class CrankInput {
+		public CrankInput(int entryPoint, String userInput) {
+			this.entryPoint = entryPoint;
+			this.userInput = userInput;
+		}
+		int entryPoint;
+		String userInput;
+	}
+	// ===========================================================================
+	static class ListOutputChannel implements AdvIO.OutputChannel {
+		List<String> lines = new ArrayList<>();
+
+		@Override
+		public void emitOutputToUser(String msg) {
+			lines.add(msg);
+		}
+
+		public List<String> getLines() {
+			return lines;
+		}
+
+	}
+	// ===========================================================================
+
+	private void doGame( String path ) {
 
 		init();
 
@@ -134,7 +181,8 @@ public class Adv32 extends Wizard
 			setOutputChannel(outputChannel);
 
 			CrankOutput output = turnTheCrank(input);
-			for(String line : outputChannel.getLines()) {
+			output.setLines(outputChannel.getLines());
+			for(String line : output.getLines()) {
 				System.out.println(line);
 			}
 			switch(output.type) {
@@ -156,43 +204,29 @@ public class Adv32 extends Wizard
 		}
 	}
 
-	static class CrankOutput  {
-		public CrankOutput(Type type, int reentryPoint) {
-			this.type = type;
-			this.reentryPoint = reentryPoint;
-		}
-
-		enum Type {
-			getInput,
-			exit
-		}
-		List<String> lines;
-		Type type;
-		int reentryPoint;
+	public CrankOutput startGame() {
+		init();
+		return nextMove(L_PREAMBLE, null);
 	}
 
-	static class CrankInput {
-		public CrankInput(int entryPoint, String userInput) {
-			this.entryPoint = entryPoint;
-			this.userInput = userInput;
-		}
-		int entryPoint;
-		String userInput;
+	public CrankOutput nextMove(String line) {
+		return nextMove(labelForNextMove, line);
 	}
 
-	static class ListOutputChannel implements AdvIO.OutputChannel {
-		List<String> lines = new ArrayList<>();
+	private int labelForNextMove;
 
-		@Override
-		public void emitOutputToUser(String msg) {
-			lines.add(msg);
-		}
+	private CrankOutput nextMove(int label, String inputLine) {
+		CrankInput input = new CrankInput(label, inputLine);
+		// Create a channel object
+		ListOutputChannel outputChannel = new ListOutputChannel();
+		setOutputChannel(outputChannel);
 
-		public List<String> getLines() {
-			return lines;
-		}
-
+		CrankOutput output = turnTheCrank(input);
+		output.setLines(outputChannel.getLines());
+		labelForNextMove = output.reentryPoint;
+		return output;
 	}
+
 
 	public CrankOutput turnTheCrank(CrankInput crankInput) {
 

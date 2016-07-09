@@ -60,36 +60,94 @@
 	$ae.showSubmitterFailure = function (el, resp) {
 		el.html("Failure: " + resp.statusText + "(" + resp.status + ")");
 	};
+
+
+
+
 	// -----------------------------------------------------------------
-	var showLine = function(elclass, message) {
-		var el = '<p class="' + elclass + '">' + message + "</p>";
-		$("#console").append($(el));
+	var consoleEl = null;
+	var inputEl = null;
+	// -----------------------------------------------------------------
+	var newLineEl = function(elclass, message) {
+		return $('<p class="' + elclass + '">' + message + "</p>");
 	}
 	// -----------------------------------------------------------------
-	var log = function(message) {
-		var console = document.getElementById('console');
-		var p = document.createElement('p');
-		p.style.wordWrap = 'break-word';
-		p.appendChild(document.createTextNode(message));
-		console.appendChild(p);
-		while (console.childNodes.length > 25) {
-			console.removeChild(console.firstChild);
+	var showLine = function(elclass, message) {
+		if(message == null)
+			return;
+		inputEl.before(newLineEl(elclass, message));
+		var contentHeight = consoleEl[0].scrollHeight;
+		var ctlHeight = consoleEl.outerHeight();
+		consoleEl.scrollTop(contentHeight - ctlHeight);
+	}
+	// -----------------------------------------------------------------
+	var clearScreen = function() {
+		consoleEl.empty();
+		inputEl = newLineEl("userInput", "_");
+		consoleEl.append(inputEl);
+	}
+	// -----------------------------------------------------------------
+	var curText = "";
+
+	var cursor = "_";
+	// -----------------------------------------------------------------
+	var setInputElText = function(text) {
+		inputEl.text(text + cursor);
+
+	}
+	// -----------------------------------------------------------------
+	var onBlink = function() {
+		cursor = (cursor == "_") ? " " : "_";
+		setInputElText(curText)
+	}
+	// -----------------------------------------------------------------
+	var onKey = function(event) {
+		var code = event.keyCode;
+		if( event.metaKey || event.ctrlKey || event.altKey ) {
+			return;
 		}
-		console.scrollTop = console.scrollHeight;
+		if(code == 13) {
+			sendCommand(curText);
+			curText = "";
+			setInputElText(curText)
+			return;
+		}
+		var len = curText.length;
+		var newText = "";
+		if(code == 8) {
+			if(len == 0)  return;
+			newText = curText.substring(0, len-1);
+		} else if(code >= 0x41 && code <= 0x5A ) {
+			if(! event.shiftKey) code += 0x20;
+			newText = curText + String.fromCharCode(code);
+		} else if(code == 0x20 || (code >= 0x30 && code <= 0x39) ) {
+			newText = curText + String.fromCharCode(code);
+		} else {
+			return;
+		}
+		curText = newText;
+		setInputElText(curText)
 	}
 	// -----------------------------------------------------------------
 	var sendCommand = function(message) {
-		showLine("userInput", message);
+		if(message == null) {
+			clearScreen();
+		} else {
+			showLine("userInput", message);
+		}
+
+		var body = { command: message==null ? "new" : "move", message: message };
 
 		$ae.doRequest({
 			method: "POST",
 			url: ECHO_URL,
-			data: JSON.stringify({ request: message }),
+			data: JSON.stringify(body),
 			onSuccess: function(resp) {
 				_.each(
 					resp.data,
 					function(msg) {
 						showLine("gameText", msg);
+
 						// log(msg);
 					}
 				);
@@ -98,77 +156,45 @@
 	}
 	// -----------------------------------------------------------------
 	$ae.appMain(function() {
-
-		// //$( "p" ).text( "The DOM is now loaded and can be manipulated." );
-		// ACID_TOKEN = $ae.Local.get("acid");
-		// var form = $("#adminLoginForm");
-		// var prog = $("#verifyTokenProgress");
-		// // Check to see if we're still logged on
-		// // if(mockNet.inUse) {
-		// //     var resp = mockNet.login();
-		// //     $ae.hide(prog);
-		// //     $ae.show(form);
-		// //     GW.onLogin(resp);
-		// //     return;
-		// // }
-		// if(ACID_TOKEN) {
-		// 	$ae.hide(form);
-		// 	$ae.show(prog);
-		// 	getRequest(
-		// 		ADMIN_BASE_URL+"/userinfo",
-		// 		function (resp) {
-		// 			$ae.hide(prog);
-		// 			$ae.show(form);
-		// 			$ae.hide(".whenUnknown");
-		// 			$ae.show(".whenKnown");
-		// 			USER_INFO = resp;
-		// 			APP.onLogin(resp.attributes);
-		// 		}
-		// 	);
-		// } else {
-		// 	window.location.pathname = ROOT_URL + "/admin";
-		// 	$ae.show(form);
-		// }
+		consoleEl = $("#console");
+		clearScreen();
 	});
 
 	$ae.onAppLoaded(function() {
-		// $.ajaxSetup({
-		// 	beforeSend: function(xhr) {
-		// 		if(ACID_TOKEN) {
-		// 			xhr.setRequestHeader(ACID_HEADER_NAME, ACID_TOKEN);
-		// 		}
-		// 	}
-		// });
 
-		// Install Event Handlers
-		// --------------------------------------------------------------
-		// // Admin Login Form:
-		// // Handle Form Submit
-		// GW.formSubmitter(
-		//     "#adminLoginForm",
-		//     ADMIN_LOGIN_URL,
-		//     {
-		//         okfunc: GW.onLogin,
-		//         failfunc: function() { $ae.Local.remove("authToken"); }
-		//     }
-		// );
-		// --------------------------------------------------------------
-		$( "#echo" ).click(function( event ) {
+		$( "#newGame" ).click(function( event ) {
 			event.preventDefault();
 			event.stopPropagation();
-			sendCommand($("#message").val());
+			sendCommand(null);
 		});
 
-		$("#message").keypress(
+		// $("#message").keypress(
+		// 	function(event) {
+		// 		var input = $("#message");
+		// 		if(event.keyCode === 13){
+		// 			sendCommand(input.val());
+		// 			input.val("");
+		// 		}
+		// 		return true;
+		// 	}
+		// );
+		// $(window).keypress(
+		// 	function(event) {
+		// 		event.preventDefault();
+		// 		event.stopPropagation();
+		// 		var code = event.keyCode;
+		// 		onKey(code);
+		// 	}
+		// );
+		$(window).keydown(
 			function(event) {
-				var input = $("#message");
-				if(event.keyCode === 13){
-					sendCommand(input.val());
-					input.val("");
-				}
-				return true;
+				event.preventDefault();
+				event.stopPropagation();
+				onKey(event);
 			}
 		);
+
+		window.setInterval(onBlink, 600);
 
 	});
 

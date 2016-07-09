@@ -321,7 +321,7 @@ public class DataFile extends AdvGameData
 		// DP("Enter RDATA()");
 		BufferedReader reader = new BufferedReader(
 				new InputStreamReader(
-					ClassLoader.getSystemResourceAsStream( "glorkz" )
+					this.getClass().getClassLoader().getResourceAsStream( "glorkz" )
 				)
 			);
 

@@ -1,5 +1,6 @@
 package org.arnyepstein.webventure;
 
+import adv32.Adv32;
 import com.google.gson.Gson;
 import org.apache.log4j.Logger;
 
@@ -8,6 +9,7 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -66,23 +68,44 @@ public class MainServlet extends HttpServlet {
 		String contextPath = req.getContextPath();
 		String info = uri.substring(contextPath.length()+1);
 		if("api/echo".equals(info)) {
-			doEcho(req, resp);
+//			doEcho(req, resp);
+			doMove(req, resp);
 		} else {
 			resp.setStatus(HttpServletResponse.SC_NOT_FOUND);
 		}
+	}
+
+	private void doMove(HttpServletRequest req, HttpServletResponse resp) throws IOException {
+		EchoRequest body = gson.fromJson(req.getReader(), EchoRequest.class);
+		HttpSession session = req.getSession();
+		Adv32 game = (Adv32) session.getAttribute("adventureGame");
+		Adv32.CrankOutput result = null;
+		if(game == null || "new".equals(body.command)) {
+			game = new Adv32();
+			session.setAttribute("adventureGame", game);
+			result = game.startGame();
+		} else {
+			result = game.nextMove(body.message);
+		}
+		EchoResponse answer = new EchoResponse();
+		for(String s : result.getLines()) {
+			answer.data.add(s);
+		}
+		gson.toJson(answer, resp.getWriter());
 	}
 
 	private void doEcho(HttpServletRequest req, HttpServletResponse resp) throws IOException {
 		EchoRequest body = gson.fromJson(req.getReader(), EchoRequest.class);
 		EchoResponse answer = new EchoResponse();
 		answer.data.add("Request was:");
-		answer.data.add(body.request);
+		answer.data.add(body.message);
 		gson.toJson(answer, resp.getWriter());
 
 	}
 
 	private static class EchoRequest {
-		public String request;
+		public String message;
+		public String command;
 	}
 	private static class EchoResponse {
 		public List<String> data = new ArrayList<>();
