@@ -510,7 +510,7 @@ public class Adv32 extends Wizard
 						}
 						default:
 							printf("Error 22");
-							return new CrankOutput(CrankOutput.Type.exit, 0);
+							throw new EmergencyExit();
 //						exit(0);
 					}
 				}

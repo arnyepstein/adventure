@@ -48,7 +48,7 @@ public class DataFile extends AdvGameData
 	public interface OutputChannel {
 		void emitOutputToUser(String msg);
 	}
-	// ---------------------------------------------------------------------
+	// ===========================================================================
 	static class MessageListSet extends ArrayList<MessageList> {
 		public MessageListSet() { super(256); }
 		public MessageListSet(int initialCapacity) { super(initialCapacity); }
@@ -74,14 +74,14 @@ public class DataFile extends AdvGameData
 		}
 
 	}
-	// ---------------------------------------------------------------------
+	// ===========================================================================
 	static class MessageList extends ArrayList<String> {
 		public MessageList(String message) {
 			super(4);
 			this.add( message );
 		}
 	}
-	// ---------------------------------------------------------------------
+	// ===========================================================================
 	static class ClassMessage
 	{
 		int max_score;
@@ -92,13 +92,13 @@ public class DataFile extends AdvGameData
 			this.message = message;
 		}
 	}
-	// ---------------------------------------------------------------------
+	// ===========================================================================
 	static class MsgInfo
 	{
 		int first_string_number = -1;
 		int last_string_number = -1;
 	}
-	// ---------------------------------------------------------------------
+	// ===========================================================================
 	private static class ObjectDescriptors
 	{
 		String description_string = null;
