@@ -1,6 +1,7 @@
 package org.arnyepstein.webventure;
 
 import adv32.Adv32;
+import adv32.EmergencyExit;
 import com.google.gson.Gson;
 import org.apache.log4j.Logger;
 
@@ -68,7 +69,6 @@ public class MainServlet extends HttpServlet {
 		String contextPath = req.getContextPath();
 		String info = uri.substring(contextPath.length()+1);
 		if("api/echo".equals(info)) {
-//			doEcho(req, resp);
 			doMove(req, resp);
 		} else {
 			resp.setStatus(HttpServletResponse.SC_NOT_FOUND);
@@ -80,16 +80,26 @@ public class MainServlet extends HttpServlet {
 		HttpSession session = req.getSession();
 		Adv32 game = (Adv32) session.getAttribute("adventureGame");
 		Adv32.CrankOutput result = null;
-		if(game == null || "new".equals(body.command)) {
-			game = new Adv32();
-			session.setAttribute("adventureGame", game);
-			result = game.startGame();
-		} else {
-			result = game.nextMove(body.message);
-		}
-		EchoResponse answer = new EchoResponse();
-		for(String s : result.getLines()) {
-			answer.data.add(s);
+		EchoResponse answer = null;
+		answer = new EchoResponse();
+		try {
+			if(game == null || "new".equals(body.command)) {
+				game = new Adv32();
+				session.setAttribute("adventureGame", game);
+				result = game.startGame();
+			} else {
+				result = game.nextMove(body.message);
+			}
+			for(String s : result.getLines()) {
+				answer.data.add(s);
+			}
+		} catch (EmergencyExit e) {
+			if(e.isError()) {
+				answer.data.add(e.getMessage());
+			} else {
+				answer.data.add("Game Over");
+			}
+			session.setAttribute("adventureGame", null);
 		}
 		gson.toJson(answer, resp.getWriter());
 	}

@@ -99,7 +99,15 @@ public class Adv32 extends Wizard
 			}
 			path = arg;
 		}
-		this.doGame( path );
+		try {
+			this.doGame(path);
+		} catch(EmergencyExit e) {
+			if(e.isError()) {
+				System.out.println(e.getMessage());
+			} else {
+				System.out.println("Game Over");
+			}
+		}
 	}
 
 	// ===========================================================================
@@ -149,28 +157,28 @@ public class Adv32 extends Wizard
 	}
 	// ===========================================================================
 
-	private void doGame( String path ) {
+	private void doGameX( String path ) {
 
 		init();
-
 		int initialLabel = L_PREAMBLE;
+
 		// TODO: Handle Save and Restore
-		if (false && path != null)    //  Restore file specified
-		{
-			int restoreChoice = restore(path);    //  See what we've got
-			switch (restoreChoice) {
-				case 0:                //  The restore worked fine
-					yea = Start(0);
-					k = 0;
-					unlink(path);    //  Don't re-use the save
-					initialLabel = L_RESTORED;    //  Get where we're going
-				case 1:                //  Couldn't open it
-					exit(0);        //  So give up
-				case 2:                //  Oops -- file was altered
-					rspeak(202);    //  You dissolve
-					exit(0);        //  File could be non-adventure
-			}                    //  So don't unlink it.
-		}
+//		if (false && path != null)    //  Restore file specified
+//		{
+//			int restoreChoice = restore(path);    //  See what we've got
+//			switch (restoreChoice) {
+//				case 0:                //  The restore worked fine
+//					yea = Start(0);
+//					k = 0;
+//					unlink(path);    //  Don't re-use the save
+//					initialLabel = L_RESTORED;    //  Get where we're going
+//				case 1:                //  Couldn't open it
+//					exit(0);        //  So give up
+//				case 2:                //  Oops -- file was altered
+//					rspeak(202);    //  You dissolve
+//					exit(0);        //  File could be non-adventure
+//			}                    //  So don't unlink it.
+//		}
 //		else {
 //			startup();
 //		}
@@ -190,15 +198,26 @@ public class Adv32 extends Wizard
 				case getInput:
 				{
 					String line = AdvIO.getInputLine();
-
-//					if (delhit > 0)		//  user typed a DEL
-//					{
-//						delhit=0;		//  reset counter
-//						wd1= "quit";
-//						wd2 = null;
-//					}
-
 					input = new CrankInput(output.reentryPoint, line);
+				}
+			}
+		}
+	}
+
+	private void doGame( String path ) {
+
+		CrankOutput output = startGame();
+
+		while(true) {
+			for(String line : output.getLines()) {
+				System.out.println(line);
+			}
+			switch(output.type) {
+				case exit: return;
+				case getInput:
+				{
+					String line = AdvIO.getInputLine();
+					output = nextMove(line);
 				}
 			}
 		}
@@ -364,6 +383,8 @@ public class Adv32 extends Wizard
 					verb=0;                         //  2012
 					obj=0;
 				case L_USER_INPUT:
+				{
+
 					checkhints();                   //  to 2600-2602
 					if (isClosed)
 					{
@@ -380,6 +401,7 @@ public class Adv32 extends Wizard
 					return new CrankOutput(CrankOutput.Type.getInput, L_PARSE_USER_INPUT);
 //				DP("GETIN @loc({0})", loc);
 //				getin();
+				}
 
 				case L_PARSE_USER_INPUT:
 					parseUserInputLine(crankInput.userInput);
@@ -488,10 +510,11 @@ public class Adv32 extends Wizard
 						}
 						default:
 							printf("Error 22");
-							exit(0);
+							return new CrankOutput(CrankOutput.Type.exit, 0);
+//						exit(0);
 					}
 				}
-				case L_RESTORED:
+				case L_RESTORED: {
 					switch(march())
 					{
 						case 2:
@@ -505,6 +528,7 @@ public class Adv32 extends Wizard
 						default:
 							bug(110);
 					}
+				}
 
 				case 2800:
 					wd1 = wd2;
@@ -1502,12 +1526,13 @@ public class Adv32 extends Wizard
 	}
 	// ---------------------------------------------------------------------
 	void bug(int n)
-	{       
-		printf("Please tell jim@rand.org that fatal bug {0} happened.",n);
-		exit(0);
+	{
+		throw new EmergencyExit(
+			"Please tell jim@rand.org that fatal bug "+n+" happened."
+		);
 	}
 	// ---------------------------------------------------------------------
-	void checkhints()                                    //  2600 &c              
+	void checkhints()                                    //  2600 &c
 	{       
 		for (int hint=4; hint<=hntmax; hint++)
 		{       
@@ -1567,7 +1592,7 @@ public class Adv32 extends Wizard
 		if (wd2!=null ) wd1 = wd2;
 		i=vocab(wd1, Usage.ANY);
 		if (i==62||i==65||i==71||i==2025)
-		{       
+		{
 			wd2=null;
 			obj=0;
 			return(2630);
