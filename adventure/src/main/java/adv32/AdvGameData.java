@@ -40,6 +40,10 @@
 package adv32;
 
 
+import java.util.ArrayList;
+import java.util.BitSet;
+import java.util.List;
+
 public class AdvGameData extends AdvSaveData
 {
 	public final static int TURNS_IN_A_DEMO_GAME=50;// How short is a demo game?
@@ -53,7 +57,23 @@ public class AdvGameData extends AdvSaveData
 		int tverb;		//  the verb that takes you there
 		int index;		// Used for Save and Restore (java version only)
 	}
-	// ---------------------------------------------------------------------
+	// ===========================================================================
+	public static final class NavConfigEntry
+	{
+		int destLoc;	// Where this takes us
+		BitSet verbIdSet = new BitSet(128);
+		int conditions;	//  m in writeup (newloc / 1000)
+	}
+	// ===========================================================================
+	public static final class NavConfig
+	{
+		NavConfig(int sourceLoc) {
+			this.sourceLoc = sourceLoc;
+		}
+		int sourceLoc;
+		List<NavConfigEntry> entries = new ArrayList<>();
+	}
+	// ===========================================================================
 	public static final class QueryState {
 
 		boolean isrdata;
@@ -82,6 +102,7 @@ public class AdvGameData extends AdvSaveData
 	}
 
 	// ---------------------------------------------------------------------
+	List<NavConfig> navConfigs = new ArrayList<>(140);
 	public int keys;
 	public int lamp;
 	public int grate;

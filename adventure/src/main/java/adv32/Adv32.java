@@ -60,13 +60,15 @@ public class Adv32 extends Wizard
 	private final static int L_PREAMBLE=0;
 	private final static int L_AFTER_NAV =2;
 	private final static int L_PREAMBLE_1 =7;
-	private final static int L_RESTORED=8;
+	private final static int L_TO_DESTINATION =8;
+	private final static int L_TO_VERB =4000;
+	private final static int L_TO_OBJECT =5000;
 	private final static int L_EXIT_GAME=9;
 	private final static int L_RESURRECT_RESPONSE=10;
 	private final static int L_YES_QUERY =33;
 	private final static int L_YES_RESPONSE=34;
 	private final static int L_PROMPT_OK=2009;
-	private final static int L_PROMPT_K=2010;
+	private final static int L_DO_MAGIC =2010;
 	private final static int L_PROMPT_SPK=2011;
 	private final static int L_NEXT_MOVE=2012;
 	private final static int L_USER_INPUT=2600;
@@ -171,7 +173,7 @@ public class Adv32 extends Wizard
 //					yea = Start(0);
 //					k = 0;
 //					unlink(path);    //  Don't re-use the save
-//					initialLabel = L_RESTORED;    //  Get where we're going
+//					initialLabel = L_TO_DESTINATION;    //  Get where we're going
 //				case 1:                //  Couldn't open it
 //					exit(0);        //  So give up
 //				case 2:                //  Oops -- file was altered
@@ -374,7 +376,7 @@ public class Adv32 extends Wizard
 
 				case L_PROMPT_OK:
 					gameData.k = 54;                   //  2009
-				case L_PROMPT_K:
+				case L_DO_MAGIC:
 					gameData.spk = gameData.k;
 				case L_PROMPT_SPK:
 					rspeak(gameData.spk);
@@ -465,21 +467,26 @@ public class Adv32 extends Wizard
 					if (liqloc(gameData.loc)==water) gameData.k = 70;
 					if (weq(wd1,"enter") &&
 						(weq(wd2,"strea")||weq(wd2,"water")))
-					{next_label=L_PROMPT_K; continue;}
+					{next_label= L_DO_MAGIC; continue;}
 					if (weq(wd1,"enter") && wd2!=null)
 					{next_label=2800; continue;}
 					if ((!weq(wd1,"water")&&!weq(wd1,"oil"))
 						|| (!weq(wd2,"plant")&&!weq(wd2,"door")))
-					{next_label=2610; continue;}
-					if (at(vocab(wd2,Usage.OBJECT))) wd2 = "pour";
+					{
+						next_label=2610; continue;
+					}
+					if (at(vocab(wd2,Usage.OBJECT)))
+					{
+						wd2 = "pour";
+					}
 
 				case 2610:
 					if (weq(wd1,"west"))
 						if (gameData.iwest++ ==10) rspeak(17);
 				case 2630:
 				{
-					int temp_i = vocab(wd1, Usage.ANY);
-					if (temp_i == -1) {
+					VocabEntry entry = vocabEntry(wd1, Usage.ANY);
+					if (entry == null) {
 						gameData.spk = 60;                 //  3000
 						if (pct(20)) gameData.spk = 61;
 						if (pct(20)) gameData.spk = 13;
@@ -489,23 +496,22 @@ public class Adv32 extends Wizard
 							continue;
 						}
 					}
-					gameData.k = temp_i % 1000;
-					gameData.kq = temp_i / 1000 + 1;
-					switch (gameData.kq) {
-						case 1: {
-							next_label = 8;
+					gameData.k = entry.id;
+					switch (entry.usage) {
+						case DESTINATION: {
+							next_label = L_TO_DESTINATION;
 							continue;
 						}
-						case 2: {
-							next_label = 5000;
+						case OBJECT: {
+							next_label = L_TO_OBJECT;
 							continue;
 						}
-						case 3: {
-							next_label = 4000;
+						case VERB: {
+							next_label = L_TO_VERB;
 							continue;
 						}
-						case 4: {
-							next_label = L_PROMPT_K;
+						case MAGIC: {
+							next_label = L_DO_MAGIC;
 							continue;
 						}
 						default:
@@ -514,7 +520,7 @@ public class Adv32 extends Wizard
 //						exit(0);
 					}
 				}
-				case L_RESTORED: {
+				case L_TO_DESTINATION: {
 					switch(march())
 					{
 						case L_AFTER_NAV:
@@ -535,7 +541,7 @@ public class Adv32 extends Wizard
 					wd2=null;
 				{next_label=2610; continue;}
 
-				case 4000:
+				case L_TO_VERB:
 					gameData.verb = gameData.k;
 					gameData.spk = actspk[gameData.verb];
 					if (wd2!=null && gameData.verb !=say)
@@ -751,7 +757,7 @@ public class Adv32 extends Wizard
 				case 9060:
 					switch(tropen())
 					{   case L_PROMPT_SPK: {next_label=L_PROMPT_SPK; continue;}
-						case L_PROMPT_K: {next_label=L_PROMPT_K; continue;}
+						case L_DO_MAGIC: {next_label= L_DO_MAGIC; continue;}
 						default: bug(106);
 					}
 				case 9050:	//  nothing
@@ -979,7 +985,7 @@ public class Adv32 extends Wizard
 
 				// END FLATTEND SWITCH }
 
-				case 5000:
+				case L_TO_OBJECT:
 					gameData.obj = gameData.k;
 					if (gameData.fixed[gameData.k]!= gameData.loc && !here(gameData.k))
 					{
@@ -1778,13 +1784,13 @@ public class Adv32 extends Wizard
 			gameData.k = 130;
 			if (!gameData.panic) gameData.clock2 = 15;
 			gameData.panic = true;
-			return(L_PROMPT_K);
+			return(L_DO_MAGIC);
 		}
 		gameData.k = 34 + gameData.prop[grate];                       //  9043
 		gameData.prop[grate]=1;
 		if (gameData.verb ==lock) gameData.prop[grate]=0;
 		gameData.k = gameData.k + 2 * gameData.prop[grate];
-		return(L_PROMPT_K);
+		return(L_DO_MAGIC);
 	}
 //	// ---------------------------------------------------------------------
 //	int trkill()                                //  L_TRY_KILL

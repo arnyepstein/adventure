@@ -2,7 +2,7 @@ package adv32;
 
 import java.io.Serializable;
 
-public class GameData implements Serializable {// ----------------------------------------------------
+public class GameData implements Serializable {
 	public int attack;
 	public int abbnum;
 	public boolean blklin;

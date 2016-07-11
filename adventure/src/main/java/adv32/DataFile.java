@@ -224,6 +224,28 @@ public class DataFile extends AdvGameData
 	{
 		return ( index < classMessageList.size() ) ? classMessageList.get(index) : null;
 	}
+	// ===========================================================================
+	public static class VocabEntry {
+		public VocabEntry(String name, int entryId) {
+			usage = Usage.fromValue(entryId/1000);
+			this.entryId = entryId;
+			this.id = entryId % 1000;
+			addName(name);
+		}
+		public int getEntryId() {
+			return entryId;
+		}
+		public int getId() {
+			return id;
+		}
+		public void addName(String name) {
+			names.add(name);
+		}
+		int entryId;
+		int id;
+		Usage usage;
+		List<String> names = new ArrayList<>(4);
+	}
 	// ---------------------------------------------------------------------
 	enum Usage {
 		DESTINATION,
@@ -238,7 +260,7 @@ public class DataFile extends AdvGameData
 
 	}
 	// ---------------------------------------------------------------------
-	public int vocab( String s, Usage usage )
+	public VocabEntry vocabEntry( String s, Usage usage )
 	{
 		// Lookup
 		String key = s;
@@ -247,8 +269,19 @@ public class DataFile extends AdvGameData
 			key = s.substring(0, 5);
 		}
 		key = key.toLowerCase();
-		Integer value = _vocab.get( key );
-		if( value == null )
+
+		// Each map entry is a list of interpretations based on usage.
+		List<VocabEntry> list = _vocab.get( key );
+		VocabEntry entry = null;
+		if(list != null) {
+			for(VocabEntry e : list) {
+				if(usage == Usage.ANY || usage == e.usage) {
+					entry = e;
+					break;
+				}
+			}
+		}
+		if( entry == null )
 		{
 			if(usage == Usage.ANY)
 			{
@@ -256,31 +289,34 @@ public class DataFile extends AdvGameData
 				{
 					printf("Vocab({0}, -1): -1", key);
 				}
-				return -1;
+				return null;
 			}
 			throw new RuntimeException("Unable to find '" + s + "' in vocab");
 		}
 		
-		int val = value.intValue();
-		Usage vusage = Usage.fromValue(val/1000);
-//		int vtype = val/1000;
-		int vval = val%1000;
 		if( db_dump_vocab )
 		{
-			printf("Vocab({0}, {1}): t={2}, val={3}", key, usage, vusage, vval);
+			printf("Vocab({0}, {1}): t={2}, val={3}", key, usage, entry.usage, entry.getEntryId());
 		}
-		
+		return entry;
+	}
+	// ---------------------------------------------------------------------
+	public int vocab( String s, Usage usage ) {
+		VocabEntry entry = vocabEntry(s, usage);
+		if (entry == null) {
+			return -1;
+		}
 		if( usage == Usage.ANY )
 		{
-			return val;
+			return entry.entryId;
 		}
-		if( usage == vusage )
-		{
-			return vval;
+		if( usage == entry.usage ) {
+			return entry.id;
 		}
 		throw new RuntimeException(
-			"Found '"+s+"' with value "+val+" and usage "+vusage +", but looking for type " + usage
+			"Found '"+s+"' with value "+entry.getEntryId()+" and usage "+entry.usage +", but looking for type " + usage
 		);
+
 	}
 	// ---------------------------------------------------------------------
 	public String sprintf( String fmt, Object... args )
@@ -472,6 +508,12 @@ public class DataFile extends AdvGameData
 			if(locc == -1) {
 				break;
 			}
+
+			while(navConfigs.size() < (locc+1)) {
+				navConfigs.add(new NavConfig(navConfigs.size()));
+			}
+			NavConfig navConfig = navConfigs.get(locc);
+
 			if (locc != oldloc && oldloc>=0) //  end of entry
 			{
 				t.next = null;	//  terminate the old entry	  
@@ -492,8 +534,14 @@ public class DataFile extends AdvGameData
 			}
 			// Get the newloc number
 			int v1 = atoi(parts[1]);
-			int m = v1/1000;
-			int n = v1%1000;
+			int conditions = v1/1000;
+			int destLoc = v1%1000;
+
+			NavConfigEntry navConfigEntry = new NavConfigEntry();
+			navConfigEntry.conditions = conditions;
+			navConfigEntry.destLoc = destLoc;
+			navConfig.entries.add(navConfigEntry);
+
 			for(int ord=2; ord<parts.length; ord++)
 			{
 				if (0 != (entries++) )
@@ -501,9 +549,13 @@ public class DataFile extends AdvGameData
 					t.next = new TravList();
 					t = t.next;
 				}
-				t.tverb= atoi(parts[ord]);	//  get verb from the file
-				t.tloc = n;	  			//  table entry mod 1000
-				t.conditions = m;		//  table entry / 1000
+				int verbId = atoi(parts[ord]);
+				t.tverb= verbId;	//  get verb from the file
+				t.tloc = destLoc;	  			//  table entry mod 1000
+				t.conditions = conditions;		//  table entry / 1000
+
+				navConfigEntry.verbIdSet.set(verbId);
+
 			}
 		}
 	}
@@ -515,7 +567,7 @@ public class DataFile extends AdvGameData
 			_verbname = new String[LAST_VERB_ID+1];
 			_objectname = new String[LAST_OBJECT_INDEX+1];
 		}
-		Integer value = new Integer(2);
+		List<VocabEntry> vocabIndex = new ArrayList<>(4000);
 		while( true )
 		{
 			String line = AdvIO.getLine(reader);
@@ -526,9 +578,16 @@ public class DataFile extends AdvGameData
 				break;
 			}
 			String name = parts[1];
-			if( id != value.intValue() )
-			{
-				value = new Integer(id);
+			while(vocabIndex.size() < (id+1)) {
+				vocabIndex.add(null);
+			}
+
+			VocabEntry entry = vocabIndex.get(id);
+			if(entry == null) {
+				entry = new VocabEntry(name, id);
+				vocabIndex.set(id, entry);
+			} else {
+				entry.addName(name);
 			}
 			if( db_dump_travel )
 			{
@@ -543,8 +602,20 @@ public class DataFile extends AdvGameData
 			}
 			
 			//DP("Vocab; {0}={1}", value.intValue(), name );
-			
-			_vocab.put( name, value );
+
+		}
+		// Now we have all of the entries, create a map based on their names
+		// A name may refer to multiple entries with different semantics
+		for(VocabEntry entry : vocabIndex) {
+			if(entry == null) continue;
+			for(String name : entry.names) {
+				List<VocabEntry> list = _vocab.get(name);
+				if(list == null) {
+					list = new ArrayList<>();
+					_vocab.put(name, list);
+				}
+				list.add(entry);
+			}
 		}
 	}
 	// ---------------------------------------------------------------------
@@ -640,57 +711,46 @@ public class DataFile extends AdvGameData
 	// ---------------------------------------------------------------------
 	void dump_travel()
 	{
-		StringBuilder sb = null;
-		for(int it=1; it<_travel.size(); it++)
-		{
-			TravList t = getTravel(it);
-			if( t == null )
-			{
+		for(NavConfig config : navConfigs) {
+			// Info for Travel from Location[it].
+			if(config == null) {
 				continue;
 			}
-			
-			// Info for Travel from Location[it].
-			String desc = getPlaceDescription(it);
-			printf("[{0}, cond({1})]: {2}", it, Integer.toHexString(cond[it]),desc);
+
+			int sourceLoc = config.sourceLoc;
+			String desc = getPlaceDescription(sourceLoc);
+			printf("[{0}, cond({1})]: {2}", sourceLoc, Integer.toHexString(cond[sourceLoc]),desc);
 			for (int oix = 0; oix<=LAST_OBJECT_INDEX; oix++)
 			{
-				if (gameData.fixed[oix] == it)
+				if (gameData.fixed[oix] == sourceLoc)
 				{
 					printf(" FIXD: {0}", _objectname[oix]);
 				}
-				if (gameData.place[oix] == it)
+				if (gameData.place[oix] == sourceLoc)
 				{
 					printf(" PLAC: {0}", _objectname[oix]);
 				}
 			}
-			
-			
-			int prev_to_loc = -1;
-			for( TravList tl = t; tl != null; tl = tl.next)
-			{
-				int cur_to_loc = tl.tloc;
-				if( cur_to_loc != prev_to_loc )
-				{
-					if( prev_to_loc != -1 )
-					{
-						System.out.println(sb.toString());
-					}
-					sb = new StringBuilder();
-					prev_to_loc = cur_to_loc;
-					// New Location
-					sb.append( "  To get to [" )
-						.append(getPlaceDescription(cur_to_loc)).append(']');
-					if( tl.conditions != 0 )
-					{
-						sb.append(" with cond(")
-							.append(tl.conditions).append(')');
-					}
-					sb.append(" say:")
-						.append(_getVerbName(tl.tverb));
+
+
+
+			StringBuilder sb = new StringBuilder();
+			for(NavConfigEntry entry : config.entries) {
+				sb.setLength(0);
+
+				// New Location
+				sb.append( "  To get to [" )
+					.append(getPlaceDescription(entry.destLoc)).append(']');
+				if( entry.conditions != 0 ) {
+					sb.append(" with cond(")
+						.append(entry.conditions).append(')');
 				}
-				else
-				{
-					sb.append('/').append(_getVerbName(tl.tverb));
+				String prefix = "";
+				sb.append(" say:");
+				int val = 0;
+				while(-1 != (val = entry.verbIdSet.nextSetBit(val+1))) {
+					sb.append(prefix).append(_getVerbName(val));
+					prefix = " or ";
 				}
 			}
 			System.out.println(sb.toString());
@@ -750,7 +810,7 @@ public class DataFile extends AdvGameData
 	private ArrayList<ObjectDescriptors> objectDescriptorsList = new ArrayList<ObjectDescriptors>();
 	private ArrayList<ClassMessage> classMessageList = new ArrayList<ClassMessage>();
 	private ArrayList<TravList> _travel = new ArrayList<TravList>();
-	private HashMap<String, Integer> _vocab = new HashMap<String, Integer>();
+	private HashMap<String, List<VocabEntry>> _vocab = new HashMap<>();
 	
 	private final static int LAST_VERB_ID = 77;
 	private String _verbname[];
