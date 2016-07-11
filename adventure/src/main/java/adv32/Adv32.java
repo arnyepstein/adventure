@@ -1066,7 +1066,7 @@ public class Adv32 extends Wizard
 	// ---------------------------------------------------------------------
 	int liq(int foo)
 	{       
-		int i= gameData.prop[bottle];
+		int i = gameData.prop[bottle];
 		if (i>-1-i) return(liq2(i));
 		else return(liq2(-1-i));
 	}
@@ -1316,7 +1316,7 @@ public class Adv32 extends Wizard
 		}
 		if (nce==null)
 		{       
-			badmove();
+			badmove(destWord);
 			return(L_AFTER_NAV);
 		}
 	//l11:    
@@ -1536,16 +1536,16 @@ public class Adv32 extends Wizard
 		return(99);
 	}
 	// ---------------------------------------------------------------------
-	int badmove()                                       //  20                   
+	int badmove(int destWord)                                       //  20
 	{
 		gameData.spk = 12;
-		if (gameData.k >=43 && gameData.k <=50) gameData.spk = 9;
-		if (gameData.k ==29|| gameData.k ==30) gameData.spk = 9;
-		if (gameData.k ==7|| gameData.k ==36|| gameData.k ==37) gameData.spk = 10;
-		if (gameData.k ==11|| gameData.k ==19) gameData.spk = 11;
+		if (destWord >=43 && destWord <=50) gameData.spk = 9;
+		if (destWord ==29|| destWord ==30) gameData.spk = 9;
+		if (destWord ==7|| destWord ==36|| destWord ==37) gameData.spk = 10;
+		if (destWord ==11|| destWord ==19) gameData.spk = 11;
 		if (gameData.verb ==find|| gameData.verb ==invent) gameData.spk = 59;
-		if (gameData.k ==62|| gameData.k ==65) gameData.spk = 42;
-		if (gameData.k ==17) gameData.spk = 80;
+		if (destWord ==62|| destWord ==65) gameData.spk = 42;
+		if (destWord ==17) gameData.spk = 80;
 		rspeak(gameData.spk);
 		return(2);
 	}
@@ -1686,19 +1686,32 @@ public class Adv32 extends Wizard
 	// ---------------------------------------------------------------------
 	int dropper()                                       //  9021                 
 	{
-		gameData.k = liq(0);
-		if (gameData.k == gameData.obj) gameData.obj = bottle;
-		if (gameData.obj ==bottle&& gameData.k !=0) gameData.place[gameData.k]=0;
-		if (gameData.obj ==cage&& gameData.prop[bird]!=0) drop(bird, gameData.loc);
-		if (gameData.obj ==bird) gameData.prop[bird]=0;
+		int objid = liq(0);
+		if (objid == gameData.obj) {
+			gameData.obj = bottle;
+		}
+		if (gameData.obj == bottle && objid !=0 ) {
+			gameData.place[objid]=0;
+		}
+		if (gameData.obj ==cage&& gameData.prop[bird]!=0) {
+			drop(bird, gameData.loc);
+		}
+		if (gameData.obj ==bird) {
+			gameData.prop[bird]=0;
+		}
 		drop(gameData.obj, gameData.loc);
 		return(L_NEXT_MOVE);
 	}
 	// ---------------------------------------------------------------------
 	int trdrop()                                        //  9020                 
 	{
-		if (toting(rod2)&& gameData.obj ==rod&&!toting(rod)) gameData.obj = rod2;
-		if (!toting(gameData.obj)) return(L_PROMPT_SPK);
+		if (toting(rod2)&& gameData.obj ==rod&&!toting(rod)) {
+			gameData.obj = rod2;
+		}
+
+		if (!toting(gameData.obj)) {
+			return(L_PROMPT_SPK);
+		}
 		if (gameData.obj ==bird&&here(snake))
 		{       
 			rspeak(30);
@@ -1714,7 +1727,7 @@ public class Adv32 extends Wizard
 			pspeak(batter,0);
 			return(L_NEXT_MOVE);
 		}
-		if (gameData.obj ==bird&&at(dragon)&& gameData.prop[dragon]==0)     //  9025
+		if (gameData.obj ==bird && at(dragon) && gameData.prop[dragon]==0)     //  9025
 		{       
 			rspeak(154);
 			dstroy(bird);
@@ -1722,7 +1735,7 @@ public class Adv32 extends Wizard
 			if (gameData.place[snake]==plac[snake]) gameData.tally2--;
 			return(L_NEXT_MOVE);
 		}
-		if (gameData.obj ==bear&&at(troll))               //  9026
+		if (gameData.obj == bear && at(troll))               //  9026
 		{       
 			rspeak(163);
 			move(troll,0);
@@ -1739,9 +1752,13 @@ public class Adv32 extends Wizard
 			return(dropper());
 		}
 		gameData.prop[vase]=2;                           //  9028
-		if (at(pillow)) gameData.prop[vase]=0;
+		if (at(pillow)) {
+			gameData.prop[vase]=0;
+		}
 		pspeak(vase, gameData.prop[vase]+1);
-		if (gameData.prop[vase]!=0) gameData.fixed[vase] = -1;
+		if (gameData.prop[vase]!=0) {
+			gameData.fixed[vase] = -1;
+		}
 		return(dropper());
 	}
 	// ---------------------------------------------------------------------
