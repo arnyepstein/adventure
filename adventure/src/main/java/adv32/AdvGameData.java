@@ -63,6 +63,11 @@ public class AdvGameData extends AdvSaveData
 		int destLoc;	// Where this takes us
 		BitSet verbIdSet = new BitSet(128);
 		int conditions;	//  m in writeup (newloc / 1000)
+		NavConfigEntry next;
+
+		public boolean hasDest(int destWord) {
+			return verbIdSet.get(destWord);
+		}
 	}
 	// ===========================================================================
 	public static final class NavConfig
@@ -71,7 +76,8 @@ public class AdvGameData extends AdvSaveData
 			this.sourceLoc = sourceLoc;
 		}
 		int sourceLoc;
-		List<NavConfigEntry> entries = new ArrayList<>();
+		NavConfigEntry first;
+		NavConfigEntry last;
 	}
 	// ===========================================================================
 	public static final class QueryState {

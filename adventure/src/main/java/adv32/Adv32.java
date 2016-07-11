@@ -613,16 +613,17 @@ public class Adv32 extends Wizard
 							);
 							isScoring =false;
 							{next_label=initiateYes(143,54,54, L_CHECK_FOR_REALLY_QUIT); continue;}
-						case 25:                    //  foo: 8250
+						case 25: {                //  foo: 8250
 							gameData.k = vocab(wd1, Usage.MAGIC);
 							gameData.spk = 42;
 							if (gameData.foobar == 1- gameData.k) {
 								next_label=8252; continue;
 							}
-							if (gameData.foobar !=0) gameData.spk = 151;
-							{
-								next_label=L_PROMPT_SPK; continue;
+							if (gameData.foobar !=0) {
+								gameData.spk = 151;
 							}
+							next_label=L_PROMPT_SPK; continue;
+						}
 						case 26:                    //  brief=8260
 							gameData.spk = 156;
 							gameData.abbnum = 10000;
@@ -1146,12 +1147,9 @@ public class Adv32 extends Wizard
 			if (gameData.dwarfLoc[dwarfid]==0) continue;
 			int newdwarfid=1;
 			NavConfig navConfig = navConfigs.get(gameData.dwarfLoc[dwarfid]);
-//			for (TravList travList = getTravel(gameData.dwarfLoc[dwarfid]);
-// 				travList!=null;
-// 				travList=travList.next)
-			for(NavConfigEntry navConfigEntry : navConfig.entries)
+			for(NavConfigEntry entry = navConfig.first; entry != null; entry = entry.next)
 			{
-				gameData.newloc = navConfigEntry.destLoc;
+				gameData.newloc = entry.destLoc;
 				if (gameData.newloc >300
 					|| gameData.newloc <15
 					|| gameData.newloc == gameData.odloc[dwarfid]
@@ -1160,7 +1158,7 @@ public class Adv32 extends Wizard
 					|| gameData.newloc == gameData.dwarfLoc[dwarfid]
 					||forced(gameData.newloc)
 					||(dwarfid==6&&bitset(gameData.newloc,3))
-					||navConfigEntry.conditions==100)
+					||entry.conditions==100)
 				{
 					continue;
 				}
@@ -1276,36 +1274,34 @@ public class Adv32 extends Wizard
 	//  label 8
 	int march()
 	{
-		TravList tkk = getTravel(gameData.newloc = gameData.loc);
-		if (tkk==null)
+		int destWord = gameData.k;
+		NavConfig navConfig = navConfigs.get(gameData.newloc = gameData.loc);
+		NavConfigEntry nce = navConfig.first;
+
+		if (navConfig==null)
 			bug(26);
-		if (gameData.k ==0)
+		if (destWord ==0)
 			return(L_AFTER_NAV);
-		if (gameData.k ==cave)                            //  40
+		if (destWord ==cave)                            //  40
 		{       
 			if (gameData.loc <8) rspeak(57);
 			if (gameData.loc >=8) rspeak(58);
 			return(L_AFTER_NAV);
 		}
-		if (gameData.k ==look)                            //  30
+		if (destWord ==look)                            //  30
 		{       
 			if (gameData.detail++ <3) rspeak(15);
 			gameData.wzdark = false;
 			abb[gameData.loc]=0;
 			return(L_AFTER_NAV);
 		}
-		if (gameData.k ==back)                            //  20
+		if (destWord ==back)                            //  20
 		{
-			tkk = mback(tkk);
-			if(tkk == null) {
+			nce = mback(nce);
+			if(nce == null) {
 				return L_AFTER_NAV;
 			}
-//			switch(mback(tkk))
-//			{
-//				case L_AFTER_NAV: return(L_AFTER_NAV);
-//				case 9: break; // goto l9;
-//				default: bug(100);
-//			}
+			destWord = gameData.k;
 		}
 		else
 		{
@@ -1313,12 +1309,12 @@ public class Adv32 extends Wizard
 			gameData.oldloc = gameData.loc;
 		}
 	//l9:
-		for (; tkk!=null; tkk=tkk.next)
+		for (; nce!=null; nce=nce.next)
 		{
-			if (tkk.tverb==1 || tkk.tverb== gameData.k)
+			if (nce.hasDest(1) || nce.hasDest(destWord) )
 				break;
 		}
-		if (tkk==null)
+		if (nce==null)
 		{       
 			badmove();
 			return(L_AFTER_NAV);
@@ -1326,10 +1322,10 @@ public class Adv32 extends Wizard
 	//l11:    
 		while (true)
 		{
-			int conditionloc=tkk.conditions;                    //  11
-			int tloc=tkk.tloc;
+			int conditionloc=nce.conditions;                    //  11
+			int tloc=nce.destLoc;
 			gameData.newloc = conditionloc;                             //  newloc=conditions
-			gameData.k = gameData.newloc % 100;                           //  k used for prob
+			int probLoc = gameData.newloc % 100;                           //  k used for prob
 			int next_label  = 0;
 			while(true)
 			{
@@ -1367,23 +1363,23 @@ public class Adv32 extends Wizard
 					gameData.newloc = gameData.loc;
 					return(L_AFTER_NAV);
 				case 2:
-					if (toting(gameData.k)||(gameData.newloc >200&&at(gameData.k)))
+					if (toting(probLoc)||(gameData.newloc >200&&at(probLoc)))
 							{ next_label = 1; continue;} // goto l16;
 					break; // goto l12;
 				case 3:
-					if (gameData.prop[gameData.k]!=(gameData.newloc /100)-3) //  newloc still conditions
+					if (gameData.prop[probLoc]!=(gameData.newloc /100)-3) //  newloc still conditions
 						{ next_label = 1; continue;} // goto l16;
 					break;
 				}
 				break;  // fall thru to L12:
 			}
 		// l12:    //  alternative to probability move      
-			for (; tkk!=null; tkk=tkk.next)
+			for (; nce!=null; nce=nce.next)
 			{
-				if (tkk.tloc!=tloc || tkk.conditions!=conditionloc)
+				if (nce.destLoc != tloc || nce.conditions!=conditionloc)
 					break;
 			}
-			if (tkk==null)
+			if (nce==null)
 				bug(25);
 			//goto l11;
 		}
@@ -1450,40 +1446,45 @@ public class Adv32 extends Wizard
 	}
 
 	// ---------------------------------------------------------------------
-	TravList mback(TravList tkk)                                         //  20
-	{       
-		if (forced(gameData.k = gameData.oldloc)) gameData.k = gameData.oldlc2;         //  k=location
+	NavConfigEntry mback(NavConfigEntry nce)                                         //  20
+	{
+		NavConfigEntry firstEntry = nce;
+
+		int cameFromLoc = gameData.oldloc;
+		if (forced(cameFromLoc)) {
+			cameFromLoc = gameData.oldlc2;         //  k=location
+		}
 		gameData.oldlc2 = gameData.oldloc;
 		gameData.oldloc = gameData.loc;
-		TravList tk2=null;
-		if (gameData.k == gameData.loc)
+		NavConfigEntry tk2=null;
+		if (cameFromLoc == gameData.loc)
 		{       
-			rspeak(91);
+			rspeak(91);		// Can't Remember
 			return(null);
 		}
-		for (; tkk!=null; tkk=tkk.next)           //  21                   
+		for (; nce!=null; nce=nce.next)           //  21
 		{
-			int tloc=tkk.tloc;
-			if (tloc== gameData.k)
+			int tloc=nce.destLoc;
+			if (tloc== cameFromLoc)
 			{
-				gameData.k = tkk.tverb;           //  k back to verb
-				tkk=getTravel(gameData.loc);
-				return(tkk);
+				// Set the Word to use to get back ....
+				gameData.k = nce.verbIdSet.nextSetBit(0);
+				return(firstEntry);
 			}
 			if (tloc<=300)
 			{
-				TravList jjj = getTravel(gameData.loc);
-				if (forced(tloc) && gameData.k ==jjj.tloc) tk2=tkk;
+				if (forced(tloc) && cameFromLoc ==firstEntry.destLoc) {
+					tk2=nce;
+				}
 			}
 		}
-		tkk=tk2;                                //  23                   
-		if (tkk!=null)
+		nce=tk2;                                //  23
+		if (nce!=null)
 		{
-			gameData.k = tkk.tverb;
-			tkk=getTravel(gameData.loc);
-			return(tkk);
+			gameData.k = nce.verbIdSet.nextSetBit(0);           //  k back to verb
+			return(firstEntry);
 		}
-		rspeak(140);
+		rspeak(140);		// Unable
 		return(null);
 	}
 	// ---------------------------------------------------------------------
@@ -1612,10 +1613,10 @@ public class Adv32 extends Wizard
 	// ---------------------------------------------------------------------
 	int trsay()                                         //  9030                 
 	{   
-		int i;
 		if (wd2!=null ) wd1 = wd2;
-		i=vocab(wd1, Usage.ANY);
-		if (i==62||i==65||i==71||i==2025)
+		VocabEntry entry = vocabEntry(wd1, Usage.ANY);
+		int verbid  = entry == null ? 0 : entry.entryId;
+		if (verbid==62||verbid==65||verbid==71||verbid==2025)
 		{
 			wd2=null;
 			gameData.obj = 0;
@@ -2265,9 +2266,9 @@ public class Adv32 extends Wizard
 		for (int loc=1; loc<=LAST_LOCATION_INDEX; loc++)
 		{
 			NavConfig navConfig = navConfigs.get(loc);
-			if (hasLText(loc) && navConfig.entries.size() > 0)
+			if (hasLText(loc) && navConfig.first != null)
 			{
-				if ((navConfig.entries.get(0).verbIdSet.get(1))) {
+				if ((navConfig.first.verbIdSet.get(1))) {
 					cond[loc] = 2;
 					DP("Set cond=2 for loc"+loc);
 				}

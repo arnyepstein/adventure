@@ -201,16 +201,6 @@ public class DataFile extends AdvGameData
 		}
 	}
 	// ---------------------------------------------------------------------
-	public TravList getTravel( int where )
-	{
-		if( where >=0 && where < _travel.size() )
-		{
-			return _travel.get( where );
-		}
-		return null;
-		//throw new RuntimeException("Invalid input to getTravel: " + where );
-	}
-	// ---------------------------------------------------------------------
 	public int getHint( int hintid, int which )
 	{
 		if( hintid >=0 && hintid < _hints.size() )
@@ -497,7 +487,6 @@ public class DataFile extends AdvGameData
 	// ---------------------------------------------------------------------
 	void loadTravelData(BufferedReader reader)
 	{
-		TravList t = null;
 		int entries = 0;
 		int oldloc= -1;
 		while(true)			//  get another line			 
@@ -514,24 +503,6 @@ public class DataFile extends AdvGameData
 			}
 			NavConfig navConfig = navConfigs.get(locc);
 
-			if (locc != oldloc && oldloc>=0) //  end of entry
-			{
-				t.next = null;	//  terminate the old entry	  
-				//DP("{0}:{1} entries", oldloc, entries );
-			//	   twrite(oldloc);								 
-			}
-			if (locc != oldloc)		//  getting a new entry
-			{	
-				while( locc >= _travel.size() )
-				{
-					_travel.add( new TravList() );
-				}
-				t  = _travel.get( locc );
-				
-				//DP("New travel list for {0}",locc);		
-				entries = 0;
-				oldloc = locc;
-			}
 			// Get the newloc number
 			int v1 = atoi(parts[1]);
 			int conditions = v1/1000;
@@ -540,22 +511,17 @@ public class DataFile extends AdvGameData
 			NavConfigEntry navConfigEntry = new NavConfigEntry();
 			navConfigEntry.conditions = conditions;
 			navConfigEntry.destLoc = destLoc;
-			navConfig.entries.add(navConfigEntry);
+			if(navConfig.first == null) {
+				navConfig.first = navConfigEntry;
+			} else {
+				navConfig.last.next = navConfigEntry;
+			}
+			navConfig.last = navConfigEntry;
 
 			for(int ord=2; ord<parts.length; ord++)
 			{
-				if (0 != (entries++) )
-				{
-					t.next = new TravList();
-					t = t.next;
-				}
 				int verbId = atoi(parts[ord]);
-				t.tverb= verbId;	//  get verb from the file
-				t.tloc = destLoc;	  			//  table entry mod 1000
-				t.conditions = conditions;		//  table entry / 1000
-
 				navConfigEntry.verbIdSet.set(verbId);
-
 			}
 		}
 	}
@@ -735,7 +701,7 @@ public class DataFile extends AdvGameData
 
 
 			StringBuilder sb = new StringBuilder();
-			for(NavConfigEntry entry : config.entries) {
+			for(NavConfigEntry entry = config.first; entry != null; entry = entry.next) {
 				sb.setLength(0);
 
 				// New Location
@@ -809,7 +775,6 @@ public class DataFile extends AdvGameData
 	private MessageListSet magicDescriptionSet = new MessageListSet();
 	private ArrayList<ObjectDescriptors> objectDescriptorsList = new ArrayList<ObjectDescriptors>();
 	private ArrayList<ClassMessage> classMessageList = new ArrayList<ClassMessage>();
-	private ArrayList<TravList> _travel = new ArrayList<TravList>();
 	private HashMap<String, List<VocabEntry>> _vocab = new HashMap<>();
 	
 	private final static int LAST_VERB_ID = 77;
