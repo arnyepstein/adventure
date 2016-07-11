@@ -82,8 +82,6 @@ public class AdvGameData extends AdvSaveData
 	}
 
 	// ---------------------------------------------------------------------
-	TravList tkk;
-	
 	public int keys;
 	public int lamp;
 	public int grate;

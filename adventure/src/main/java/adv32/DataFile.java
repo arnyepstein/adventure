@@ -654,11 +654,11 @@ public class DataFile extends AdvGameData
 			printf("[{0}, cond({1})]: {2}", it, Integer.toHexString(cond[it]),desc);
 			for (int oix = 0; oix<=LAST_OBJECT_INDEX; oix++)
 			{
-				if (fixed[oix] == it)
+				if (gameData.fixed[oix] == it)
 				{
 					printf(" FIXD: {0}", _objectname[oix]);
 				}
-				if (place[oix] == it)
+				if (gameData.place[oix] == it)
 				{
 					printf(" PLAC: {0}", _objectname[oix]);
 				}

@@ -57,15 +57,15 @@ public class Wizard extends AdvIO
 	// ---------------------------------------------------------------------
 	public void poof()
 	{
-		this.latncy = 45;
+		this.gameData.latncy = 45;
 	}
 	// ---------------------------------------------------------------------
 	public boolean Start(int ignored)
 	{
-		int delay = datime() - this.saved_last_usage;
-		if (delay >= this.latncy)
-		{       
-			this.saved_last_usage = -1;
+		int delay = datime() - this.gameData.saved_last_usage;
+		if (delay >= this.gameData.latncy)
+		{
+			this.gameData.saved_last_usage = -1;
 			return false;
 		}
 		printf(
@@ -73,7 +73,7 @@ public class Wizard extends AdvIO
 			delay,
 			delay == 1 ? "" : "s"
 		);
-		if (delay <= this.latncy/3)
+		if (delay <= this.gameData.latncy /3)
 		{
 			mspeak(2);
 			exit(0);
@@ -84,7 +84,7 @@ public class Wizard extends AdvIO
 			mspeak(9);
 			exit(0);
 		}
-		this.saved_last_usage = -1;
+		this.gameData.saved_last_usage = -1;
 		return false;
 	}
 	// ---------------------------------------------------------------------

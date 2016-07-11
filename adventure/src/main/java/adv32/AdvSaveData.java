@@ -51,63 +51,6 @@ class AdvSaveData implements java.io.Serializable
 	
 	// ----------------------------------------------------
 	public final static int TOTING = -1;
-	
-	// ----------------------------------------------------
-	public int attack;
-	public int abbnum;
-	public boolean blklin;
-	public int bonus;
-	public int chloc;
-	public int chloc2;
-	public int clock1;
-	public int clock2;
-	public int daltlc;
-	public boolean demo;
-	public int detail;  
-	public int dflag;
-	public int dkill;
-	public int dtotal;
-	public int foobar;
-	public boolean gaveup;
-	public int holdng;
-	public int iwest;
-	public int k;
-	public int k2;
-	public int knfloc;
-	public int kq;
-	public int latncy;
-	public int limit;
-	public boolean lmwarn;
-	public int loc;
-	public int maxdie;
-	public int mxscor;
-	public int newloc;
-	public int numdie;
-	public int obj;
-	public int oldlc2;
-	public int oldloc;
-	public boolean panic;
-	public int saved_last_usage;
-	public boolean scorng;
-	public int spk;
-	public int stick;
-	public int tally;
-	public int tally2;
-	public int tkk_index;  // TODO: This pointer needs work!!!!!!!!!
-	public int turns;
-	public int verb;
-	public String wd1;
-	public String wd2;
-	public boolean wzdark;
-    public boolean yea;
-    public int atloc;
-	public int dwarfLoc[] = new int[7];  // dwarf stuff
-	public int odloc[] = new int[7];
-	public boolean dwarfSeenAtLoc[] = new boolean[7];
-	public boolean hinted[] = new boolean[20];
-	public int link[] = new int[FIXED_OBJECT_OFFSET + LAST_OBJECT_INDEX + 1];
-	public int place[] = new int[LAST_OBJECT_INDEX+1];
-	public int fixed[] = new int[LAST_OBJECT_INDEX+1];
-	public int prop[] = new int[LAST_OBJECT_INDEX+1];
-	public int tk[] = new int[21];
+	public final GameData gameData = new GameData();
+
 }

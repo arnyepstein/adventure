@@ -58,7 +58,7 @@ public class Adv32 extends Wizard
 	}
 
 	private final static int L_PREAMBLE=0;
-	private final static int L_NEWGAME=2;
+	private final static int L_AFTER_NAV =2;
 	private final static int L_PREAMBLE_1 =7;
 	private final static int L_RESTORED=8;
 	private final static int L_EXIT_GAME=9;
@@ -259,24 +259,24 @@ public class Adv32 extends Wizard
 			{
 				case L_RESURRECT_RESPONSE:
 				{
-					yea = queryState.saidYes();
-					numdie++;
-					if (numdie==maxdie || !yea) {
+					gameData.yea = queryState.saidYes();
+					gameData.numdie++;
+					if (gameData.numdie == gameData.maxdie || !gameData.yea) {
 						next_label = done(2);
 						continue;
 					}
-					place[water]=0;
-					place[oil]=0;
-					if (toting(lamp)) prop[lamp]=0;
+					gameData.place[water]=0;
+					gameData.place[oil]=0;
+					if (toting(lamp)) gameData.prop[lamp]=0;
 					for (int i=FIXED_OBJECT_OFFSET; i>=1; i--)
 					{
 						if (!toting(i)) continue;
-						k=oldlc2;
-						if (i==lamp) k=1;
-						drop(i,k);
+						gameData.k = gameData.oldlc2;
+						if (i==lamp) gameData.k = 1;
+						drop(i, gameData.k);
 					}
-					loc=3;
-					oldloc=loc;
+					gameData.loc = 3;
+					gameData.oldloc = gameData.loc;
 					next_label = 2000;
 					continue;
 
@@ -289,41 +289,41 @@ public class Adv32 extends Wizard
 				case L_PREAMBLE:
 					initRandomNumbers();
 
-					demo = Start(0);
+					gameData.demo = Start(0);
 					{next_label=initiateYes(65,1,0, L_PREAMBLE_1); continue;}
 
 				case L_PREAMBLE_1:
 //				hinted[3] = yes(65,1,0);
-					hinted[3] = queryState.saidYes();
-					newloc=1;
+					gameData.hinted[3] = queryState.saidYes();
+					gameData.newloc = 1;
 					delhit = 0;
-					limit=330;
-					if (hinted[3])
+					gameData.limit = 330;
+					if (gameData.hinted[3])
 					{
-						limit=1000;      //  better batteries if instrucs
+						gameData.limit = 1000;      //  better batteries if instrucs
 					}
 
-				case L_NEWGAME:
-					if (newloc<9 && newloc!=0 && isClosing)
+				case L_AFTER_NAV:
+					if (gameData.newloc <9 && gameData.newloc !=0 && isClosing)
 					{
 						rspeak(130);    //  if closing leave only by
-						newloc=loc;     //       main office
-						if (!panic) clock2=15;
-						panic=true;
+						gameData.newloc = gameData.loc;     //       main office
+						if (!gameData.panic) gameData.clock2 = 15;
+						gameData.panic = true;
 					}
 				{
 					int rval=fdwarf();          //  dwarf stuff
 					if (rval==99)  {next_label = die(99); continue;}
 				}
 				case 2000:
-					if (loc==0) {next_label = die(99); continue;}
+					if (gameData.loc ==0) {next_label = die(99); continue;}
 //TODO:: Fix This
-					temp_mlist = getSText(loc);
-					if ((abb[loc]%abbnum)==0 || temp_mlist == null)
-						temp_mlist = getLText(loc);
-					if (!forced(loc) && dark(0))
+					temp_mlist = getSText(gameData.loc);
+					if ((abb[gameData.loc]% gameData.abbnum)==0 || temp_mlist == null)
+						temp_mlist = getLText(gameData.loc);
+					if (!forced(gameData.loc) && dark(0))
 					{
-						if (wzdark && pct(35))
+						if (gameData.wzdark && pct(35))
 						{
 							next_label = die(99); continue;
 						}
@@ -332,38 +332,38 @@ public class Adv32 extends Wizard
 				case 2001:
 					if (toting(bear)) rspeak(141);  //  2001
 					speak(temp_mlist);
-					k=1;
-					if (forced(loc))
+					gameData.k = 1;
+					if (forced(gameData.loc))
 					{next_label=8; continue;}
-					if (loc==33 && pct(25)&&!isClosing) rspeak(8);
+					if (gameData.loc ==33 && pct(25)&&!isClosing) rspeak(8);
 					// FLATTEN
 					//if (!dark(0))
 					// {
 					if (dark(0)) {next_label=L_NEXT_MOVE; continue;}
-					abb[loc]++;
-					for (int temp_i=atloc[loc]; temp_i!=0; temp_i=link[temp_i])     // 2004
+					abb[gameData.loc]++;
+					for (int temp_i = atloc[gameData.loc]; temp_i!=0; temp_i= gameData.link[temp_i])     // 2004
 					{
-						obj=temp_i;
-						if (obj>FIXED_OBJECT_OFFSET)
-							obj -= FIXED_OBJECT_OFFSET;
-						if (obj==steps && toting(nugget))
+						gameData.obj = temp_i;
+						if (gameData.obj >FIXED_OBJECT_OFFSET)
+							gameData.obj = gameData.obj - FIXED_OBJECT_OFFSET;
+						if (gameData.obj ==steps && toting(nugget))
 							continue;
-						if (prop[obj]<0)
+						if (gameData.prop[gameData.obj]<0)
 						{
 							if (isClosed)
 								continue;
-							prop[obj]=0;
-							if (obj==rug||obj==chain)
-								prop[obj]=1;
-							tally--;
-							if (tally==tally2 && tally != 0)
-								if (limit>35) limit=35;
+							gameData.prop[gameData.obj]=0;
+							if (gameData.obj ==rug|| gameData.obj ==chain)
+								gameData.prop[gameData.obj]=1;
+							gameData.tally--;
+							if (gameData.tally == gameData.tally2 && gameData.tally != 0)
+								if (gameData.limit >35) gameData.limit = 35;
 						}
 						{
-							int propid =  prop[obj];   //  2006
-							if (obj==steps && loc==fixed[steps])
+							int propid = gameData.prop[gameData.obj];   //  2006
+							if (gameData.obj ==steps && gameData.loc == gameData.fixed[steps])
 								propid = 1;
-							pspeak(obj, propid);
+							pspeak(gameData.obj, propid);
 						}
 					}                                       //  2008
 				{next_label=L_NEXT_MOVE; continue;}
@@ -373,31 +373,31 @@ public class Adv32 extends Wizard
 				{next_label=yesResponse(queryState, crankInput.userInput); continue;}
 
 				case L_PROMPT_OK:
-					k=54;                   //  2009
+					gameData.k = 54;                   //  2009
 				case L_PROMPT_K:
-					spk=k;
+					gameData.spk = gameData.k;
 				case L_PROMPT_SPK:
-					rspeak(spk);
+					rspeak(gameData.spk);
 					// ENDFLATTEN }
 				case L_NEXT_MOVE:
-					verb=0;                         //  2012
-					obj=0;
+					gameData.verb = 0;                         //  2012
+					gameData.obj = 0;
 				case L_USER_INPUT:
 				{
 
 					checkhints();                   //  to 2600-2602
 					if (isClosed)
 					{
-						if (prop[oyster]<0 && toting(oyster))
+						if (gameData.prop[oyster]<0 && toting(oyster))
 							pspeak(oyster,1);
 						for (int temp_i=1; temp_i<=LAST_OBJECT_INDEX; temp_i++)
 						{
-							if (toting(temp_i)&&prop[temp_i]<0)       // 2604
-								prop[temp_i] = -1-prop[temp_i];
+							if (toting(temp_i)&& gameData.prop[temp_i]<0)       // 2604
+								gameData.prop[temp_i] = -1- gameData.prop[temp_i];
 						}
 					}
-					wzdark=dark(0);                 //  2605
-					if (knfloc>0 && knfloc!=loc) knfloc=1;
+					gameData.wzdark = dark(0);                 //  2605
+					if (gameData.knfloc >0 && gameData.knfloc != gameData.loc) gameData.knfloc = 1;
 					return new CrankOutput(CrankOutput.Type.getInput, L_PARSE_USER_INPUT);
 //				DP("GETIN @loc({0})", loc);
 //				getin();
@@ -407,62 +407,62 @@ public class Adv32 extends Wizard
 					parseUserInputLine(crankInput.userInput);
 					// Fall Through ...
 				case L_PROCESS_USER_INPUT:
-					if ((foobar = -foobar)>0) foobar=0;     //  2608
+					if ((gameData.foobar = -gameData.foobar)>0) gameData.foobar = 0;     //  2608
 					//  should check here for "magic mode"
-					turns++;
-					if (demo && turns>=TURNS_IN_A_DEMO_GAME) {next_label=done(1); continue;}
+					gameData.turns++;
+					if (gameData.demo && gameData.turns >=TURNS_IN_A_DEMO_GAME) {next_label=done(1); continue;}
 					;      //  to 13000
 
-					if (verb==say && wd2!=null) verb=0;
-					if (verb==say)
+					if (gameData.verb ==say && wd2!=null) gameData.verb = 0;
+					if (gameData.verb ==say)
 					{next_label=4090; continue;}
-					if (tally==0 && loc>=15 && loc!=33) clock1--;
-					if (clock1==0)
+					if (gameData.tally ==0 && gameData.loc >=15 && gameData.loc !=33) gameData.clock1--;
+					if (gameData.clock1 ==0)
 					{       closing();                      //  to 10000
 						{next_label=19999; continue;}
 					}
-					if (clock1<0) clock2--;
-					if (clock2==0)
+					if (gameData.clock1 <0) gameData.clock2--;
+					if (gameData.clock2 ==0)
 					{
 						caveclose();            //  to 11000
 						{next_label=2; continue;} //  back to 2
 					}
-					if (prop[lamp]==1) limit--;
-					if (limit<=30 && here(batter) && prop[batter]==0
+					if (gameData.prop[lamp]==1) gameData.limit--;
+					if (gameData.limit <=30 && here(batter) && gameData.prop[batter]==0
 						&& here(lamp))
 					{
 						rspeak(188);            //  12000
-						prop[batter]=1;
-						if (toting(batter)) drop(batter,loc);
-						limit=limit+2500;
-						lmwarn=false;
+						gameData.prop[batter]=1;
+						if (toting(batter)) drop(batter, gameData.loc);
+						gameData.limit = gameData.limit + 2500;
+						gameData.lmwarn = false;
 						{next_label=19999; continue;}
 					}
-					if (limit==0)
+					if (gameData.limit ==0)
 					{
-						limit = -1;             //  12400
-						prop[lamp]=0;
+						gameData.limit = -1;             //  12400
+						gameData.prop[lamp]=0;
 						rspeak(184);
 						{next_label=19999; continue;}
 					}
-					if (limit<0&&loc<=8)
+					if (gameData.limit <0&& gameData.loc <=8)
 					{
 						rspeak(185);            //  12600
-						gaveup=true;
+						gameData.gaveup = true;
 						{next_label=done(3); continue;}		//  to 20000
 					}
-					if (limit<=30)
+					if (gameData.limit <=30)
 					{
-						if (lmwarn|| !here(lamp)) {next_label=19999; continue;}  // 12200
-						lmwarn=true;
-						spk=187;
-						if (place[batter]==0) spk=183;
-						if (prop[batter]==1) spk=189;
-						rspeak(spk);
+						if (gameData.lmwarn || !here(lamp)) {next_label=19999; continue;}  // 12200
+						gameData.lmwarn = true;
+						gameData.spk = 187;
+						if (gameData.place[batter]==0) gameData.spk = 183;
+						if (gameData.prop[batter]==1) gameData.spk = 189;
+						rspeak(gameData.spk);
 					}
 				case 19999:
-					k=43;
-					if (liqloc(loc)==water) k=70;
+					gameData.k = 43;
+					if (liqloc(gameData.loc)==water) gameData.k = 70;
 					if (weq(wd1,"enter") &&
 						(weq(wd2,"strea")||weq(wd2,"water")))
 					{next_label=L_PROMPT_K; continue;}
@@ -475,23 +475,23 @@ public class Adv32 extends Wizard
 
 				case 2610:
 					if (weq(wd1,"west"))
-						if (++iwest==10) rspeak(17);
+						if (gameData.iwest++ ==10) rspeak(17);
 				case 2630:
 				{
 					int temp_i = vocab(wd1, Usage.ANY);
 					if (temp_i == -1) {
-						spk = 60;                 //  3000
-						if (pct(20)) spk = 61;
-						if (pct(20)) spk = 13;
-						rspeak(spk);
+						gameData.spk = 60;                 //  3000
+						if (pct(20)) gameData.spk = 61;
+						if (pct(20)) gameData.spk = 13;
+						rspeak(gameData.spk);
 						{
 							next_label = L_USER_INPUT;
 							continue;
 						}
 					}
-					k = temp_i % 1000;
-					kq = temp_i / 1000 + 1;
-					switch (kq) {
+					gameData.k = temp_i % 1000;
+					gameData.kq = temp_i / 1000 + 1;
+					switch (gameData.kq) {
 						case 1: {
 							next_label = 8;
 							continue;
@@ -517,8 +517,8 @@ public class Adv32 extends Wizard
 				case L_RESTORED: {
 					switch(march())
 					{
-						case 2:
-						{next_label=2; continue;} //  back to 2
+						case L_AFTER_NAV:
+						{next_label=L_AFTER_NAV; continue;} //  back to 2
 						case 99:
 							switch(die(99))
 							{
@@ -536,23 +536,23 @@ public class Adv32 extends Wizard
 				{next_label=2610; continue;}
 
 				case 4000:
-					verb=k;
-					spk=actspk[verb];
-					if (wd2!=null && verb!=say)
+					gameData.verb = gameData.k;
+					gameData.spk = actspk[gameData.verb];
+					if (wd2!=null && gameData.verb !=say)
 					{next_label=2800; continue;}
-					if (verb==say) obj= wd2.charAt(0); //TODO::CHECK THIS *wd2;
-					if (obj!=0) {next_label=4090; continue;}
+					if (gameData.verb ==say) gameData.obj = wd2.charAt(0); //TODO::CHECK THIS *wd2;
+					if (gameData.obj !=0) {next_label=4090; continue;}
 				case 4080:
-					switch(verb)
+					switch(gameData.verb)
 					{   case 1:                     //  take = 8010
-						if (atloc[loc]==0 || link[atloc[loc]] != 0)
+						if (atloc[gameData.loc]==0 || gameData.link[atloc[gameData.loc]] != 0)
 						{next_label=L_ASK_WHAT_OBJ; continue;}
 						for (int temp_i=1; temp_i<=5; temp_i++)
 						{
-							if (dwarfLoc[temp_i]==loc&&dflag>=2)
+							if (gameData.dwarfLoc[temp_i]== gameData.loc && gameData.dflag >=2)
 							{next_label=L_ASK_WHAT_OBJ; continue;}
 						}
-						obj=atloc[loc];
+						gameData.obj = atloc[gameData.loc];
 					{next_label=9010; continue;}
 						case 2: case 3: case 9:     //  L_ASK_WHAT_OBJ : drop,say,wave
 						case 10: case 16: case 17:  //  calm,rub,toss
@@ -560,14 +560,14 @@ public class Adv32 extends Wizard
 						case 29:                    //  wake
 						{next_label=L_ASK_WHAT_OBJ; continue;}
 						case 4: case 6:             //  8040 open,lock
-							spk=28;
-							if (here(clam)) obj=clam;
-							if (here(oyster)) obj=oyster;
-							if (at(door)) obj=door;
-							if (at(grate)) obj=grate;
-							if (obj!=0 && here(chain)) {next_label=L_ASK_WHAT_OBJ; continue;}
-							if (here(chain)) obj=chain;
-							if (obj==0) {next_label=L_PROMPT_SPK; continue;}
+						gameData.spk = 28;
+							if (here(clam)) gameData.obj = clam;
+							if (here(oyster)) gameData.obj = oyster;
+							if (at(door)) gameData.obj = door;
+							if (at(grate)) gameData.obj = grate;
+							if (gameData.obj !=0 && here(chain)) {next_label=L_ASK_WHAT_OBJ; continue;}
+							if (here(chain)) gameData.obj = chain;
+							if (gameData.obj ==0) {next_label=L_PROMPT_SPK; continue;}
 							else {next_label=9040; continue;}
 						case 5: {next_label=L_PROMPT_OK; continue;}         //  nothing
 						case 7: {next_label=9070; continue;}         //  on
@@ -583,17 +583,17 @@ public class Adv32 extends Wizard
 						{next_label=initiateYes(22,54,54, L_CHECK_FOR_QUIT); continue;}
 //
 						case 20:                    //  invent=8200
-							spk=98;
+							gameData.spk = 98;
 							for (int objid=1; objid<=LAST_OBJECT_INDEX; objid++)
 							{       if (objid!=bear && toting(objid))
-							{       if (spk==98) rspeak(99);
-								blklin=false;
+							{       if (gameData.spk ==98) rspeak(99);
+								gameData.blklin = false;
 								pspeak(objid,-1);
-								blklin=true;
-								spk=0;
+								gameData.blklin = true;
+								gameData.spk = 0;
 							}
 							}
-							if (toting(bear)) spk=141;
+							if (toting(bear)) gameData.spk = 141;
 						{next_label=L_PROMPT_SPK; continue;}
 						case 22: {next_label=9220; continue;}        //  fill
 						case 23: {next_label=9230; continue;}        //  blast
@@ -603,34 +603,34 @@ public class Adv32 extends Wizard
 								"If you were to quit now, you would score {0} out"
 									+" of a possible {1}",
 								score(),
-								mxscor
+								gameData.mxscor
 							);
 							isScoring =false;
 							{next_label=initiateYes(143,54,54, L_CHECK_FOR_REALLY_QUIT); continue;}
 						case 25:                    //  foo: 8250
-							k=vocab(wd1, Usage.MAGIC);
-							spk=42;
-							if (foobar==1-k) {next_label=8252; continue;}
-							if (foobar!=0) spk=151;
+							gameData.k = vocab(wd1, Usage.MAGIC);
+							gameData.spk = 42;
+							if (gameData.foobar ==1- gameData.k) {next_label=8252; continue;}
+							if (gameData.foobar !=0) gameData.spk = 151;
 						{next_label=L_PROMPT_SPK; continue;}
 						case 26:                    //  brief=8260
-							spk=156;
-							abbnum=10000;
-							detail=3;
+							gameData.spk = 156;
+							gameData.abbnum = 10000;
+							gameData.detail = 3;
 						{next_label=L_PROMPT_SPK; continue;}
 						case 27:                    //  read=8270
-							if (here(magzin)) obj=magzin;
-							if (here(tablet)) obj=obj*100+tablet;
-							if (here(messag)) obj=obj*100+messag;
-							if (isClosed &&toting(oyster)) obj=oyster;
-							if (obj>FIXED_OBJECT_OFFSET || obj==0 || dark(0) )
+							if (here(magzin)) gameData.obj = magzin;
+							if (here(tablet)) gameData.obj = gameData.obj * 100 + tablet;
+							if (here(messag)) gameData.obj = gameData.obj * 100 + messag;
+							if (isClosed &&toting(oyster)) gameData.obj = oyster;
+							if (gameData.obj >FIXED_OBJECT_OFFSET || gameData.obj ==0 || dark(0) )
 							{
 								{next_label=L_ASK_WHAT_OBJ; continue;}
 							}
 						{next_label=9270; continue;}
 						case 30:                    //  suspend=8300
-							spk=201;
-							if (demo) {next_label=L_PROMPT_SPK; continue;}
+							gameData.spk = 201;
+							if (gameData.demo) {next_label=L_PROMPT_SPK; continue;}
 							printf(
 								"I can suspend your adventure for you so you "
 									+"can resume later, but"
@@ -638,7 +638,7 @@ public class Adv32 extends Wizard
 							printf(
 								"you will have to wait at least {0} minutes before"
 									+" continuing.",
-								latncy
+								gameData.latncy
 							);
 							{next_label=initiateYes(200,54,54, L_CHECK_FOR_ACCEPTABLE); continue;}
 						case 31:                    //  hours=8310
@@ -650,45 +650,45 @@ public class Adv32 extends Wizard
 						default: bug(23);
 					}
 				case L_CHECK_FOR_REALLY_QUIT:
-					gaveup=queryState.saidYes();
-					if (gaveup) {next_label=done(2); continue;}
+					gameData.gaveup = queryState.saidYes();
+					if (gameData.gaveup) {next_label=done(2); continue;}
 					{next_label=L_NEXT_MOVE; continue;}
 				case L_CHECK_FOR_QUIT:
-					gaveup=queryState.saidYes();
-					if (gaveup) {next_label=done(2); continue;}    //  8185
+					gameData.gaveup = queryState.saidYes();
+					if (gameData.gaveup) {next_label=done(2); continue;}    //  8185
 					{next_label=L_NEXT_MOVE; continue;}
 				case L_CHECK_FOR_ACCEPTABLE:
 					if (!queryState.saidYes()) {next_label=L_NEXT_MOVE; continue;}
-					saved_last_usage = datime();
+					gameData.saved_last_usage = datime();
 					// TODO: What do we do here????
 //						ciao(path);	          //  Do we quit?
-					{next_label=L_NEWGAME; continue;} //  Maybe not
+					{next_label= L_AFTER_NAV; continue;} //  Maybe not
 				case L_ASK_WHAT_OBJ:
 					printf("{0} what?",wd1);
-					obj=0;
+					gameData.obj = 0;
 				{next_label=L_USER_INPUT; continue;}
 				case 8142:
 					dstroy(food);
-					spk=72;
+					gameData.spk = 72;
 				{next_label=L_PROMPT_SPK; continue;}
 				case 8252:
-					foobar=k;
-					if (k!=4) {next_label=L_PROMPT_OK; continue;}
-					foobar=0;
-					if (place[eggs]==plac[eggs]
-						||(toting(eggs)&&loc==plac[eggs])) {next_label=L_PROMPT_SPK; continue;}
-					if (place[eggs]==0&&place[troll]==0&&prop[troll]==0)
-						prop[troll]=1;
-					k=2;
-					if (here(eggs)) k=1;
-					if (loc==plac[eggs]) k=0;
+					gameData.foobar = gameData.k;
+					if (gameData.k !=4) {next_label=L_PROMPT_OK; continue;}
+					gameData.foobar = 0;
+					if (gameData.place[eggs]==plac[eggs]
+						||(toting(eggs)&& gameData.loc ==plac[eggs])) {next_label=L_PROMPT_SPK; continue;}
+					if (gameData.place[eggs]==0&& gameData.place[troll]==0&& gameData.prop[troll]==0)
+						gameData.prop[troll]=1;
+					gameData.k = 2;
+					if (here(eggs)) gameData.k = 1;
+					if (gameData.loc ==plac[eggs]) gameData.k = 0;
 					move(eggs,plac[eggs]);
-					pspeak(eggs,k);
+					pspeak(eggs, gameData.k);
 				{next_label=L_NEXT_MOVE; continue;}
 
 				case 4090:
 					// FLATTEN THIS SWITCH;
-					switch(verb)
+					switch(gameData.verb)
 					{
 						case 1:
 						case 2:                     //  drop = 9020
@@ -713,7 +713,7 @@ public class Adv32 extends Wizard
 						case 27:
 						case 28:
 						case 29:
-						{next_label=(9000+verb*10); continue;}
+						{next_label=(9000+ gameData.verb *10); continue;}
 
 						case 10: case 11: case 18:  //  calm, walk, quit
 						case 24: case 25: case 26:  //  score, foo, brief
@@ -758,86 +758,87 @@ public class Adv32 extends Wizard
 				{next_label=L_PROMPT_OK; continue;}
 				case 9070:	//  on   9070
 					if (!here(lamp))  {next_label=L_PROMPT_SPK; continue;}
-					spk=184;
-					if (limit<0) {next_label=L_PROMPT_SPK; continue;}
-					prop[lamp]=1;
+					gameData.spk = 184;
+					if (gameData.limit <0) {next_label=L_PROMPT_SPK; continue;}
+					gameData.prop[lamp]=1;
 					rspeak(39);
-					if (wzdark) {next_label=2000; continue;}
+					if (gameData.wzdark) {next_label=2000; continue;}
 				{next_label=L_NEXT_MOVE; continue;}
 
 				case 9080:	//  off
 					if (!here(lamp)) {next_label=L_PROMPT_SPK; continue;}
-					prop[lamp]=0;
+					gameData.prop[lamp]=0;
 					rspeak(40);
 					if (dark(0)) rspeak(16);
 				{next_label=L_NEXT_MOVE; continue;}
 
 				case 9090:	//  wave
 				{
-					if ((!toting(obj))&&(obj!=rod||!toting(rod2)))
-						spk=29;
-					if (obj!=rod||!at(fissur)||!toting(obj)|| isClosing)
+					if ((!toting(gameData.obj))&&(gameData.obj !=rod||!toting(rod2)))
+						gameData.spk = 29;
+					if (gameData.obj !=rod||!at(fissur)||!toting(gameData.obj)|| isClosing)
 					{next_label=L_PROMPT_SPK; continue;}
-					prop[fissur]=1-prop[fissur];
-					pspeak(fissur,2-prop[fissur]);
+					gameData.prop[fissur]=1- gameData.prop[fissur];
+					pspeak(fissur,2- gameData.prop[fissur]);
 					{next_label=L_NEXT_MOVE; continue;}
 				}
 				case L_TRY_KILL:	//  kill
 				{
 					int dwarfid;
 					for (dwarfid = 1; dwarfid <= 5; dwarfid++)
-						if (dwarfLoc[dwarfid] == loc && dflag >= 2) break;
+						if (gameData.dwarfLoc[dwarfid] == gameData.loc && gameData.dflag >= 2) break;
 					if (dwarfid == 6) dwarfid = 0;
-					if (obj == 0)                     //  9122
+					if (gameData.obj == 0)                     //  9122
 					{
-						if (dwarfid != 0) obj = dwarf;
-						if (here(snake)) obj = obj * 100 + snake;
-						if (at(dragon) && prop[dragon] == 0) obj = obj * 100 + dragon;
-						if (at(troll)) obj = obj * 100 + troll;
-						if (here(bear) && prop[bear] == 0) obj = obj * 100 + bear;
-						if (obj > FIXED_OBJECT_OFFSET) {
+						if (dwarfid != 0) gameData.obj = dwarf;
+						if (here(snake)) gameData.obj = gameData.obj * 100 + snake;
+						if (at(dragon) && gameData.prop[dragon] == 0)
+							gameData.obj = gameData.obj * 100 + dragon;
+						if (at(troll)) gameData.obj = gameData.obj * 100 + troll;
+						if (here(bear) && gameData.prop[bear] == 0) gameData.obj = gameData.obj * 100 + bear;
+						if (gameData.obj > FIXED_OBJECT_OFFSET) {
 							next_label = L_ASK_WHAT_OBJ;
 							continue;
 						}
-						if (obj == 0) {
-							if (here(bird) && verb != vthrow) obj = bird;
-							if (here(clam) || here(oyster)) obj = 100 * obj + clam;
-							if (obj > 100) {
+						if (gameData.obj == 0) {
+							if (here(bird) && gameData.verb != vthrow) gameData.obj = bird;
+							if (here(clam) || here(oyster)) gameData.obj = 100 * gameData.obj + clam;
+							if (gameData.obj > 100) {
 								next_label = L_ASK_WHAT_OBJ;
 								continue;
 							}
 						}
 					}
-					if (obj == bird)                  //  9124
+					if (gameData.obj == bird)                  //  9124
 					{
-						spk = 137;
+						gameData.spk = 137;
 						if (isClosed) {
 							next_label = L_PROMPT_SPK;
 							continue;
 						}
 						dstroy(bird);
-						prop[bird] = 0;
-						if (place[snake] == plac[snake]) tally2++;
-						spk = 45;
+						gameData.prop[bird] = 0;
+						if (gameData.place[snake] == plac[snake]) gameData.tally2++;
+						gameData.spk = 45;
 					}
-					if (obj == 0) spk = 44;             //  9125
-					if (obj == clam || obj == oyster) spk = 150;
-					if (obj == snake) spk = 46;
-					if (obj == dwarf) spk = 49;
-					if (obj == dwarf && isClosed) {
+					if (gameData.obj == 0) gameData.spk = 44;             //  9125
+					if (gameData.obj == clam || gameData.obj == oyster) gameData.spk = 150;
+					if (gameData.obj == snake) gameData.spk = 46;
+					if (gameData.obj == dwarf) gameData.spk = 49;
+					if (gameData.obj == dwarf && isClosed) {
 						next_label = 19000;
 						continue;
 					}
-					if (obj == dragon) spk = 147;
-					if (obj == troll) spk = 157;
-					if (obj == bear) spk = 165 + (prop[bear] + 1) / 2;
-					if (obj != dragon || prop[dragon] != 0) {
+					if (gameData.obj == dragon) gameData.spk = 147;
+					if (gameData.obj == troll) gameData.spk = 157;
+					if (gameData.obj == bear) gameData.spk = 165 + (gameData.prop[bear] + 1) / 2;
+					if (gameData.obj != dragon || gameData.prop[dragon] != 0) {
 						next_label = L_PROMPT_SPK;
 						continue;
 					}
 					rspeak(49);
-					verb = 0;
-					obj = 0;
+					gameData.verb = 0;
+					gameData.obj = 0;
 //				DP("GETIN @loc({0})", loc);
 //				getin();
 					return new CrankOutput(CrankOutput.Type.getInput, L_TRY_KILL_RESPONSE);
@@ -847,62 +848,63 @@ public class Adv32 extends Wizard
 
 					if (!weq(wd1,"y")&&!weq(wd1,"yes")) {next_label=L_PROCESS_USER_INPUT; continue;}
 					pspeak(dragon,1);
-					prop[dragon]=2;
-					prop[rug]=0;
-					k=(plac[dragon]+fixd[dragon])/2;
+					gameData.prop[dragon]=2;
+					gameData.prop[rug]=0;
+					gameData.k = (plac[dragon] + fixd[dragon]) / 2;
 					move(dragon+FIXED_OBJECT_OFFSET,-1);
 					move(rug+FIXED_OBJECT_OFFSET,0);
-					move(dragon,k);
-					move(rug,k);
-					for (obj=1; obj<=LAST_OBJECT_INDEX; obj++)
-						if (place[obj]==plac[dragon]||place[obj]==fixd[dragon])
-							move(obj,k);
-					loc=k;
-					k=0;
+					move(dragon, gameData.k);
+					move(rug, gameData.k);
+					for (gameData.obj = 1; gameData.obj <=LAST_OBJECT_INDEX; gameData.obj++)
+						if (gameData.place[gameData.obj]==plac[dragon]|| gameData.place[gameData.obj]==fixd[dragon])
+							move(gameData.obj, gameData.k);
+					gameData.loc = gameData.k;
+					gameData.k = 0;
 					{next_label=8; continue;}
 				}
 
 				case 9130:	//  pour
-					if (obj==bottle||obj==0) obj=liq(0);
-					if (obj==0) {next_label=L_ASK_WHAT_OBJ; continue;}
-					if (!toting(obj)) {next_label=L_PROMPT_SPK; continue;}
-					spk=78;
-					if (obj!=oil&&obj!=water) {next_label=L_PROMPT_SPK; continue;}
-					prop[bottle]=1;
-					place[obj]=0;
-					spk=77;
+					if (gameData.obj ==bottle|| gameData.obj ==0) gameData.obj = liq(0);
+					if (gameData.obj ==0) {next_label=L_ASK_WHAT_OBJ; continue;}
+					if (!toting(gameData.obj)) {next_label=L_PROMPT_SPK; continue;}
+					gameData.spk = 78;
+					if (gameData.obj !=oil&& gameData.obj !=water) {next_label=L_PROMPT_SPK; continue;}
+					gameData.prop[bottle]=1;
+					gameData.place[gameData.obj]=0;
+					gameData.spk = 77;
 					if (!(at(plant)||at(door))) {next_label=L_PROMPT_SPK; continue;}
 					if (at(door))
-					{       prop[door]=0;   //  9132
-						if (obj==oil) prop[door]=1;
-						spk=113+prop[door];
+					{
+						gameData.prop[door]=0;   //  9132
+						if (gameData.obj ==oil) gameData.prop[door]=1;
+						gameData.spk = 113 + gameData.prop[door];
 						{next_label=L_PROMPT_SPK; continue;}
 					}
-					spk=112;
-					if (obj!=water) {next_label=L_PROMPT_SPK; continue;}
-					pspeak(plant,prop[plant]+1);
-					prop[plant]=(prop[plant]+2)% 6;
-					prop[plant2]=prop[plant]/2;
-					k=0;
+					gameData.spk = 112;
+					if (gameData.obj !=water) {next_label=L_PROMPT_SPK; continue;}
+					pspeak(plant, gameData.prop[plant]+1);
+					gameData.prop[plant]=(gameData.prop[plant]+2)% 6;
+					gameData.prop[plant2]= gameData.prop[plant]/2;
+					gameData.k = 0;
 				{next_label=8; continue;}
 				case 9140:	//9140 - eat
-					if (obj==food) {next_label=8142; continue;}
-					if (obj==bird||obj==snake||obj==clam||obj==oyster
-						||obj==dwarf||obj==dragon||obj==troll
-						||obj==bear) spk=71;
+					if (gameData.obj ==food) {next_label=8142; continue;}
+					if (gameData.obj ==bird|| gameData.obj ==snake|| gameData.obj ==clam|| gameData.obj ==oyster
+						|| gameData.obj ==dwarf|| gameData.obj ==dragon|| gameData.obj ==troll
+						|| gameData.obj ==bear) gameData.spk = 71;
 				{next_label=L_PROMPT_SPK; continue;}
 				case 9150:	//  9150 - drink
-					if (obj==0&&liqloc(loc)!=water&&(liq(0)!=water
+					if (gameData.obj ==0&&liqloc(gameData.loc)!=water&&(liq(0)!=water
 						||!here(bottle))) {next_label=L_ASK_WHAT_OBJ; continue;}
-					if (obj!=0&&obj!=water) spk=110;
-					if (spk==110||liq(0)!=water||!here(bottle))
+					if (gameData.obj !=0&& gameData.obj !=water) gameData.spk = 110;
+					if (gameData.spk ==110||liq(0)!=water||!here(bottle))
 					{next_label=L_PROMPT_SPK; continue;}
-					prop[bottle]=1;
-					place[water]=0;
-					spk=74;
+					gameData.prop[bottle]=1;
+					gameData.place[water]=0;
+					gameData.spk = 74;
 				{next_label=L_PROMPT_SPK; continue;}
 				case 9160:	//  9160: rub
-					if (obj!=lamp) spk=76;
+					if (gameData.obj !=lamp) gameData.spk = 76;
 				{next_label=L_PROMPT_SPK; continue;}
 				case 9170:	//  9170: throw
 					switch(trtoss())
@@ -916,13 +918,13 @@ public class Adv32 extends Wizard
 					}
 				case 9190:	//  9190: find
 				case 9200:	// , invent
-					if (at(obj)||(liq(0)==obj&&at(bottle))
-						||k==liqloc(loc)) spk=94;
+					if (at(gameData.obj)||(liq(0)== gameData.obj &&at(bottle))
+						|| gameData.k ==liqloc(gameData.loc)) gameData.spk = 94;
 					for (int temp_i=1; temp_i<=5; temp_i++) {
-						if (dwarfLoc[temp_i]==loc&&dflag>=2&&obj==dwarf) spk=94;
+						if (gameData.dwarfLoc[temp_i]== gameData.loc && gameData.dflag >=2&& gameData.obj ==dwarf) gameData.spk = 94;
 					}
-					if (isClosed) spk=138;
-					if (toting(obj)) spk=24;
+					if (isClosed) gameData.spk = 138;
+					if (toting(gameData.obj)) gameData.spk = 24;
 				{next_label=L_PROMPT_SPK; continue;}
 				case 9210:	//  feed
 					switch(trfeed())
@@ -937,89 +939,90 @@ public class Adv32 extends Wizard
 						default: bug(115);
 					}
 				case 9230:	//  blast
-					if (prop[rod2]<0||!isClosed) {next_label=L_PROMPT_SPK; continue;}
-					bonus=133;
-					if (loc==115) bonus=134;
-					if (here(rod2)) bonus=135;
-					rspeak(bonus);
+					if (gameData.prop[rod2]<0||!isClosed) {next_label=L_PROMPT_SPK; continue;}
+					gameData.bonus = 133;
+					if (gameData.loc ==115) gameData.bonus = 134;
+					if (here(rod2)) gameData.bonus = 135;
+					rspeak(gameData.bonus);
 					next_label=done(2);
 					continue;
 				case 9270:	//  read
 					if (dark(0)) {next_label=5190; continue;}
-					if (obj==magzin) spk=190;
-					if (obj==tablet) spk=196;
-					if (obj==messag) spk=191;
-					if (obj==oyster&&hinted[2]&&toting(oyster)) spk=194;
-					if (obj!=oyster||hinted[2]||!toting(oyster)
+					if (gameData.obj ==magzin) gameData.spk = 190;
+					if (gameData.obj ==tablet) gameData.spk = 196;
+					if (gameData.obj ==messag) gameData.spk = 191;
+					if (gameData.obj ==oyster&& gameData.hinted[2]&&toting(oyster)) gameData.spk = 194;
+					if (gameData.obj !=oyster|| gameData.hinted[2]||!toting(oyster)
 						||!isClosed) {next_label=L_PROMPT_SPK; continue;}
 					{next_label=initiateYes(192,193,54, 9271); continue;}
 				case 9271:	//  read
-					hinted[2]=queryState.saidYes();
+					gameData.hinted[2]=queryState.saidYes();
 					{next_label=L_NEXT_MOVE; continue;}
 				case 9280:	//  break
-					if (obj==mirror) spk=148;
-					if (obj==vase&&prop[vase]==0)
-					{       spk=198;
-						if (toting(vase)) drop(vase,loc);
-						prop[vase]=2;
-						fixed[vase]= -1;
+					if (gameData.obj ==mirror) gameData.spk = 148;
+					if (gameData.obj ==vase&& gameData.prop[vase]==0)
+					{
+						gameData.spk = 198;
+						if (toting(vase)) drop(vase, gameData.loc);
+						gameData.prop[vase]=2;
+						gameData.fixed[vase]= -1;
 						{next_label=L_PROMPT_SPK; continue;}
 					}
-					if (obj!=mirror||!isClosed) {next_label=L_PROMPT_SPK; continue;}
+					if (gameData.obj !=mirror||!isClosed) {next_label=L_PROMPT_SPK; continue;}
 					rspeak(197);
 					{next_label=done(3); continue;}
 
 				case 9290:	//  wake
-					if (obj!=dwarf||!isClosed) {next_label=L_PROMPT_SPK; continue;}
+					if (gameData.obj !=dwarf||!isClosed) {next_label=L_PROMPT_SPK; continue;}
 					rspeak(199);
 					{next_label=done(3); continue;}
 
 				// END FLATTEND SWITCH }
 
 				case 5000:
-					obj=k;
-					if (fixed[k]!=loc && !here(k))
+					gameData.obj = gameData.k;
+					if (gameData.fixed[gameData.k]!= gameData.loc && !here(gameData.k))
 					{
 						{next_label=5100; continue;}
 					}
 				case 5010:
 					if (wd2!=null) {next_label=2800; continue;}
-					if (verb!=0) {next_label=4090; continue;}
+					if (gameData.verb !=0) {next_label=4090; continue;}
 					printf("What do you want to do with the {0}?",wd1);
 				{next_label=L_USER_INPUT; continue;}
 				case 5100:
-					if (k!=grate) {next_label=5110; continue;}
-					if (loc==1||loc==4||loc==7) k=dprssn;
-					if (loc>9&&loc<15) k=entrnc;
-					if (k!=grate) {next_label=8; continue;}
+					if (gameData.k !=grate) {next_label=5110; continue;}
+					if (gameData.loc ==1|| gameData.loc ==4|| gameData.loc ==7) gameData.k = dprssn;
+					if (gameData.loc >9&& gameData.loc <15) gameData.k = entrnc;
+					if (gameData.k !=grate) {next_label=8; continue;}
 				case 5110:
-					if (k!=dwarf)
+					if (gameData.k !=dwarf)
 					{
 						{next_label=5120; continue;}
 					}
 					for (int temp_i=1; temp_i<=5; temp_i++)
 					{
-						if (dwarfLoc[temp_i]==loc&&dflag>=2)
+						if (gameData.dwarfLoc[temp_i]== gameData.loc && gameData.dflag >=2)
 						{
 							{next_label=5010; continue;}
 						}
 					}
 				case 5120:
-					if ((liq(0)==k&&here(bottle))||k==liqloc(loc)) {next_label=5010; continue;}
-					if (obj!=plant||!at(plant2)||prop[plant2]==0) {next_label=5130; continue;}
-					obj=plant2;
+					if ((liq(0)== gameData.k &&here(bottle))|| gameData.k ==liqloc(gameData.loc)) {next_label=5010; continue;}
+					if (gameData.obj !=plant||!at(plant2)|| gameData.prop[plant2]==0) {next_label=5130; continue;}
+					gameData.obj = plant2;
 				{next_label=5010; continue;}
 				case 5130:
-					if (obj!=knife||knfloc!=loc) {next_label=5140; continue;}
-					knfloc = -1;
-					spk=116;
+					if (gameData.obj !=knife|| gameData.knfloc != gameData.loc) {next_label=5140; continue;}
+					gameData.knfloc = -1;
+					gameData.spk = 116;
 				{next_label=L_PROMPT_SPK; continue;}
 				case 5140:
-					if (obj!=rod||!here(rod2)) {next_label=5190; continue;}
-					obj=rod2;
+					if (gameData.obj !=rod||!here(rod2)) {next_label=5190; continue;}
+					gameData.obj = rod2;
 				{next_label=5010; continue;}
 				case 5190:
-					if ((verb==find||verb==invent)&&wd2==null) {next_label=5010; continue;}
+					if ((gameData.verb ==find|| gameData.verb ==invent)&&wd2==null) {next_label=5010; continue;}
 					printf("I see no {0} here",wd1);
 				{next_label=L_NEXT_MOVE; continue;}
 			}
@@ -1030,18 +1033,18 @@ public class Adv32 extends Wizard
 	// ---------------------------------------------------------------------
 	boolean toting(int objj)
 	{       
-		return place[objj] == TOTING;
+		return gameData.place[objj] == TOTING;
 	}
 	// ---------------------------------------------------------------------
 	boolean here(int objj)
 	{       
-		return place[objj]==loc || toting(objj);
+		return gameData.place[objj]== gameData.loc || toting(objj);
 	}
 	
 	// ---------------------------------------------------------------------
 	boolean at(int objj)
 	{       
-		return place[objj]==loc || fixed[objj]==loc;
+		return gameData.place[objj]== gameData.loc || gameData.fixed[objj]== gameData.loc;
 	}
 	// ---------------------------------------------------------------------
 	int liq2(int pbotl)
@@ -1051,7 +1054,7 @@ public class Adv32 extends Wizard
 	// ---------------------------------------------------------------------
 	int liq(int foo)
 	{       
-		int i=prop[bottle];
+		int i= gameData.prop[bottle];
 		if (i>-1-i) return(liq2(i));
 		else return(liq2(-1-i));
 	}
@@ -1077,8 +1080,8 @@ public class Adv32 extends Wizard
 	// ---------------------------------------------------------------------
 	boolean dark(int foo)
 	{       
-		return (cond[loc]%2)==0
-				&& (prop[lamp]==0 || !here(lamp));
+		return (cond[gameData.loc]%2)==0
+				&& (gameData.prop[lamp]==0 || !here(lamp));
 	}
 	// ---------------------------------------------------------------------
 	boolean pct(int n)
@@ -1089,73 +1092,73 @@ public class Adv32 extends Wizard
 	// ---------------------------------------------------------------------
 	int fdwarf()		//  71 
 	{	
-		if (newloc!=loc && !forced(loc) && !bitset(loc,3))
+		if (gameData.newloc != gameData.loc && !forced(gameData.loc) && !bitset(gameData.loc,3))
 		{	
 			for (int i=1; i<=5; i++)
 			{	
-				if (odloc[i]!=newloc || !dwarfSeenAtLoc[i])
+				if (gameData.odloc[i]!= gameData.newloc || !gameData.dwarfSeenAtLoc[i])
 					continue;
-				newloc=loc;
+				gameData.newloc = gameData.loc;
 				rspeak(2);
 				break;
 			}
 		}
-		loc=newloc;			//  74 
-		if (loc==0 || forced(loc) || bitset(newloc,3))
+		gameData.loc = gameData.newloc;			//  74
+		if (gameData.loc ==0 || forced(gameData.loc) || bitset(gameData.newloc,3))
 			return(2000);
-		if (dflag==0)
+		if (gameData.dflag ==0)
 		{	
-			if (loc>=15) dflag=1;
+			if (gameData.loc >=15) gameData.dflag = 1;
 			return(2000);
 		}
-		if (dflag==1)		//  6000 
+		if (gameData.dflag ==1)		//  6000
 		{	
-			if (loc<15||pct(95)) return(2000);
-			dflag=2;
+			if (gameData.loc <15||pct(95)) return(2000);
+			gameData.dflag = 2;
 			for (int i=1; i<=2; i++)
 			{	
 				int dwarfid = 1+ran(5);
-				if (pct(50)&&saved== -1) dwarfLoc[dwarfid]=0; //  6001
+				if (pct(50)&&saved== -1) gameData.dwarfLoc[dwarfid]=0; //  6001
 			}
 			for (int i=1; i<=5; i++)
 			{	
-				if (dwarfLoc[i]==loc) dwarfLoc[i]=daltlc;
-				odloc[i]= dwarfLoc[i];		//  6002
+				if (gameData.dwarfLoc[i]== gameData.loc) gameData.dwarfLoc[i]= gameData.daltlc;
+				gameData.odloc[i]= gameData.dwarfLoc[i];		//  6002
 			}
 			rspeak(3);
-			drop(axe,loc);
+			drop(axe, gameData.loc);
 			return(2000);
 		}
-		dtotal=attack=stick=0;			//  6010 
+		gameData.dtotal = gameData.attack = gameData.stick = 0;			//  6010
 		for (int dwarfid=1; dwarfid<=6; dwarfid++)                    /* loop to 6030 */
 		{
-			if (dwarfLoc[dwarfid]==0) continue;
+			if (gameData.dwarfLoc[dwarfid]==0) continue;
 			int newdwarfid=1;
-			for (TravList travList =getTravel(dwarfLoc[dwarfid]); travList!=null; travList=travList.next)
-			{	
-				newloc=travList.tloc;
-				if (newloc>300
-					||newloc<15
-					||newloc==odloc[dwarfid]
-					||(newdwarfid>1&&newloc==tk[newdwarfid-1])
+			for (TravList travList = getTravel(gameData.dwarfLoc[dwarfid]); travList!=null; travList=travList.next)
+			{
+				gameData.newloc = travList.tloc;
+				if (gameData.newloc >300
+					|| gameData.newloc <15
+					|| gameData.newloc == gameData.odloc[dwarfid]
+					||(newdwarfid>1&& gameData.newloc == gameData.tk[newdwarfid-1])
 					||newdwarfid>=20
-					||newloc== dwarfLoc[dwarfid]
-					||forced(newloc)
-					||(dwarfid==6&&bitset(newloc,3))
+					|| gameData.newloc == gameData.dwarfLoc[dwarfid]
+					||forced(gameData.newloc)
+					||(dwarfid==6&&bitset(gameData.newloc,3))
 					||travList.conditions==100)
 				{
 					continue;
 				}
-				tk[newdwarfid++]=newloc;
+				gameData.tk[newdwarfid++]= gameData.newloc;
 			}
-			tk[newdwarfid]=odloc[dwarfid];                 /* 6016 */
+			gameData.tk[newdwarfid]= gameData.odloc[dwarfid];                 /* 6016 */
 			if (newdwarfid>=2) newdwarfid--;
 			newdwarfid=1+ran(newdwarfid);
-			odloc[dwarfid]= dwarfLoc[dwarfid];
-			dwarfLoc[dwarfid]=tk[newdwarfid];
-			dwarfSeenAtLoc[dwarfid]=(dwarfSeenAtLoc[dwarfid]&&loc>=15)||(dwarfLoc[dwarfid]==loc||odloc[dwarfid]==loc);
-			if (!dwarfSeenAtLoc[dwarfid]) continue;        /* i.e. goto 6030 */
-			dwarfLoc[dwarfid]=loc;
+			gameData.odloc[dwarfid]= gameData.dwarfLoc[dwarfid];
+			gameData.dwarfLoc[dwarfid]= gameData.tk[newdwarfid];
+			gameData.dwarfSeenAtLoc[dwarfid]=(gameData.dwarfSeenAtLoc[dwarfid]&& gameData.loc >=15)||(gameData.dwarfLoc[dwarfid]== gameData.loc || gameData.odloc[dwarfid]== gameData.loc);
+			if (!gameData.dwarfSeenAtLoc[dwarfid]) continue;        /* i.e. goto 6030 */
+			gameData.dwarfLoc[dwarfid]= gameData.loc;
 			if (dwarfid==6)                       /* pirate's spotted him */
 			{
 				int next_label = 0;
@@ -1164,12 +1167,12 @@ public class Adv32 extends Wizard
 					switch(next_label)
 					{
 					case 0:
-						if (loc==chloc||prop[chest]>=0) break;
-						k=0;
+						if (gameData.loc == gameData.chloc || gameData.prop[chest]>=0) break;
+						gameData.k = 0;
 						for (newdwarfid=FIRST_TREASURE_INDEX; newdwarfid<=LAST_TREASURE_INDEX; newdwarfid++)      /* loop to 6020 */
 						{       
-							if (newdwarfid==pyram&&(loc==plac[pyram]
-								 || loc==plac[emrald])) // goto l6020;
+							if (newdwarfid==pyram&&(gameData.loc ==plac[pyram]
+								 || gameData.loc ==plac[emrald])) // goto l6020;
 							{
 							}
 							else
@@ -1177,35 +1180,35 @@ public class Adv32 extends Wizard
 								if (toting(newdwarfid)) {next_label = 2; break;};
 							}
 						//l6020:  
-							if (here(newdwarfid)) k=1;
+							if (here(newdwarfid)) gameData.k = 1;
 							next_label = 1;
 						}                              /* 6020 */
 						continue;
 					case 1: // l6021:  
-						if (tally==tally2+1 && k==0 && place[chest]==0
-							&&here(lamp) && prop[lamp]==1) {next_label = 5; continue;};
-						if (odloc[6]!= dwarfLoc[6]&&pct(20))
+						if (gameData.tally == gameData.tally2 +1 && gameData.k ==0 && gameData.place[chest]==0
+							&&here(lamp) && gameData.prop[lamp]==1) {next_label = 5; continue;};
+						if (gameData.odloc[6]!= gameData.dwarfLoc[6]&&pct(20))
 							rspeak(127);
 						break;       /* to 6030 */
 					case 2: // l6022:  
 						rspeak(128);
-						if (place[messag]==0) move(chest,chloc);
-						move(messag,chloc2);
+						if (gameData.place[messag]==0) move(chest, gameData.chloc);
+						move(messag, gameData.chloc2);
 						for (newdwarfid=FIRST_TREASURE_INDEX; newdwarfid<=LAST_TREASURE_INDEX; newdwarfid++)      /* loop to 6023 */
 						{       
-							if (newdwarfid==pyram && (loc==plac[pyram]
-								|| loc==plac[emrald])) break;
-							if (at(newdwarfid)&&fixed[newdwarfid]==0) carry(newdwarfid,loc);
-							if (toting(newdwarfid)) drop(newdwarfid,chloc);
+							if (newdwarfid==pyram && (gameData.loc ==plac[pyram]
+								|| gameData.loc ==plac[emrald])) break;
+							if (at(newdwarfid)&& gameData.fixed[newdwarfid]==0) carry(newdwarfid, gameData.loc);
+							if (toting(newdwarfid)) drop(newdwarfid, gameData.chloc);
 						}
 					case 4: // l6024:  
-						dwarfLoc[6]=odloc[6]=chloc;
-						dwarfSeenAtLoc[6]=false;
+						gameData.dwarfLoc[6]= gameData.odloc[6]= gameData.chloc;
+						gameData.dwarfSeenAtLoc[6]=false;
 						break;
 					case 5: // l6025:  
 						rspeak(186);
-						move(chest,chloc);
-						move(messag,chloc2);
+						move(chest, gameData.chloc);
+						move(messag, gameData.chloc2);
 						{next_label = 4; continue;}
 						//goto l6024;
 					}
@@ -1213,118 +1216,123 @@ public class Adv32 extends Wizard
 				}
 				continue;
 			}
-			dtotal++;                       /* 6027 */
-			if (odloc[dwarfid]!= dwarfLoc[dwarfid]) continue;
-			attack++;
-			if (knfloc>=0) knfloc=loc;
-			if (ran(1000)<95*(dflag-2)) stick++;
+			gameData.dtotal++;                       /* 6027 */
+			if (gameData.odloc[dwarfid]!= gameData.dwarfLoc[dwarfid]) continue;
+			gameData.attack++;
+			if (gameData.knfloc >=0) gameData.knfloc = gameData.loc;
+			if (ran(1000)<95*(gameData.dflag -2)) gameData.stick++;
 		}                                       /* 6030 */
-		if (dtotal==0) return(2000);
-		if (dtotal!=1)
+		if (gameData.dtotal ==0) return(2000);
+		if (gameData.dtotal !=1)
 		{       
 			printf(
 				"There are {0} threatening little dwarves "
 				+"in the room with you.",
-				dtotal
+				gameData.dtotal
 			);
 		}
 		else
 			rspeak(4);
-		if (attack==0) return(2000);
-		if (dflag==2) dflag=3;
-		if (saved!= -1) dflag=20;
-		if (attack!=1)
+		if (gameData.attack ==0) return(2000);
+		if (gameData.dflag ==2) gameData.dflag = 3;
+		if (saved!= -1) gameData.dflag = 20;
+		if (gameData.attack !=1)
 		{       
-			printf("{0} of them throw knives at you!",attack);
-			k=6;
+			printf("{0} of them throw knives at you!", gameData.attack);
+			gameData.k = 6;
 		}
 		else
 		{
 			rspeak(5);
-			k=52;
+			gameData.k = 52;
 		}
-		if (stick<=1)                   //  82 
+		if (gameData.stick <=1)                   //  82
 		{       
-			rspeak(k+stick);
-			if (stick==0) return(2000);
+			rspeak(gameData.k + gameData.stick);
+			if (gameData.stick ==0) return(2000);
 		}
 		else
-			printf("{0} of them get you!",stick);  //  83 
-		oldlc2=loc;
+			printf("{0} of them get you!", gameData.stick);  //  83
+		gameData.oldlc2 = gameData.loc;
 		return(99);
 	}
 	// ---------------------------------------------------------------------
 	//  label 8
 	int march()
-	{       
-		if ((tkk=getTravel(newloc=loc))==null)
+	{
+		TravList tkk = getTravel(gameData.newloc = gameData.loc);
+		if (tkk==null)
 			bug(26);
-		if (k==0)
-			return(2);
-		if (k==cave)                            //  40                   
+		if (gameData.k ==0)
+			return(L_AFTER_NAV);
+		if (gameData.k ==cave)                            //  40
 		{       
-			if (loc<8) rspeak(57);
-			if (loc>=8) rspeak(58);
-			return(2);
+			if (gameData.loc <8) rspeak(57);
+			if (gameData.loc >=8) rspeak(58);
+			return(L_AFTER_NAV);
 		}
-		if (k==look)                            //  30                   
+		if (gameData.k ==look)                            //  30
 		{       
-			if (detail++<3) rspeak(15);
-			wzdark=false;
-			abb[loc]=0;
-			return(2);
+			if (gameData.detail++ <3) rspeak(15);
+			gameData.wzdark = false;
+			abb[gameData.loc]=0;
+			return(L_AFTER_NAV);
 		}
-		if (k==back)                            //  20                   
-		{       
-			switch(mback())
-			{       
-				case 2: return(2);
-				case 9: break; // goto l9;
-				default: bug(100);
+		if (gameData.k ==back)                            //  20
+		{
+			tkk = mback(tkk);
+			if(tkk == null) {
+				return L_AFTER_NAV;
 			}
+//			switch(mback(tkk))
+//			{
+//				case L_AFTER_NAV: return(L_AFTER_NAV);
+//				case 9: break; // goto l9;
+//				default: bug(100);
+//			}
 		}
 		else
 		{
-			oldlc2=oldloc;
-			oldloc=loc;
+			gameData.oldlc2 = gameData.oldloc;
+			gameData.oldloc = gameData.loc;
 		}
 	//l9:
 		for (; tkk!=null; tkk=tkk.next)
 		{
-			if (tkk.tverb==1 || tkk.tverb==k)
+			if (tkk.tverb==1 || tkk.tverb== gameData.k)
 				break;
 		}
 		if (tkk==null)
 		{       
 			badmove();
-			return(2);
+			return(L_AFTER_NAV);
 		}
 	//l11:    
 		while (true)
 		{
 			int conditionloc=tkk.conditions;                    //  11
 			int tloc=tkk.tloc;
-			newloc=conditionloc;                             //  newloc=conditions
-			k=newloc%100;                           //  k used for prob
+			gameData.newloc = conditionloc;                             //  newloc=conditions
+			gameData.k = gameData.newloc % 100;                           //  k used for prob
 			int next_label  = 0;
 			while(true)
 			{
 				switch(next_label)
 				{
 				case 0:
-					if(!(newloc<=300)) { next_label = 3; continue;}
-					if(!(newloc<=100)) { next_label = 2; continue;}    //  13
-					if(newloc!=0 && !pct(newloc)) break; // goto l12;  //  14   
+					if(!(gameData.newloc <=300)) { next_label = 3; continue;}
+					if(!(gameData.newloc <=100)) { next_label = 2; continue;}    //  13
+					if(gameData.newloc !=0 && !pct(gameData.newloc)) break; // goto l12;  //  14
 				case 1: //		l16:    
-					newloc=tloc;             //  newloc=location
-					if (newloc<=300)
-						return(2);
-					if (newloc<=500)
+					gameData.newloc = tloc;             //  newloc=location
+					if (gameData.newloc <=300)
+						return(L_AFTER_NAV);
+					if (gameData.newloc <=500)
 					{
 						int spec = specials();
 						if(spec == 2 )
 						{
-							return 2;
+							return L_AFTER_NAV;
 						}
 						else if(spec == 12)
 						{
@@ -1339,15 +1347,15 @@ public class Adv32 extends Wizard
 							bug(101);
 						}
 					}
-					rspeak(newloc-500);
-					newloc=loc;
-					return(2);
+					rspeak(gameData.newloc -500);
+					gameData.newloc = gameData.loc;
+					return(L_AFTER_NAV);
 				case 2:
-					if (toting(k)||(newloc>200&&at(k)))
+					if (toting(gameData.k)||(gameData.newloc >200&&at(gameData.k)))
 							{ next_label = 1; continue;} // goto l16;
 					break; // goto l12;
 				case 3:
-					if (prop[k]!=(newloc/100)-3) //  newloc still conditions
+					if (gameData.prop[gameData.k]!=(gameData.newloc /100)-3) //  newloc still conditions
 						{ next_label = 1; continue;} // goto l16;
 					break;
 				}
@@ -1426,55 +1434,55 @@ public class Adv32 extends Wizard
 	}
 
 	// ---------------------------------------------------------------------
-	int mback()                                         //  20                   
+	TravList mback(TravList tkk)                                         //  20
 	{       
-		if (forced(k=oldloc)) k=oldlc2;         //  k=location
-		oldlc2=oldloc;
-		oldloc=loc;
+		if (forced(gameData.k = gameData.oldloc)) gameData.k = gameData.oldlc2;         //  k=location
+		gameData.oldlc2 = gameData.oldloc;
+		gameData.oldloc = gameData.loc;
 		TravList tk2=null;
-		if (k==loc)
+		if (gameData.k == gameData.loc)
 		{       
 			rspeak(91);
-			return(2);
+			return(null);
 		}
 		for (; tkk!=null; tkk=tkk.next)           //  21                   
 		{
 			int tloc=tkk.tloc;
-			if (tloc==k)
-			{       
-				k=tkk.tverb;           //  k back to verb       
-				tkk=getTravel(loc);
-				return(9);
+			if (tloc== gameData.k)
+			{
+				gameData.k = tkk.tverb;           //  k back to verb
+				tkk=getTravel(gameData.loc);
+				return(tkk);
 			}
 			if (tloc<=300)
 			{
-				TravList jjj = getTravel(loc);
-				if (forced(tloc) && k==jjj.tloc) tk2=tkk;
+				TravList jjj = getTravel(gameData.loc);
+				if (forced(tloc) && gameData.k ==jjj.tloc) tk2=tkk;
 			}
 		}
 		tkk=tk2;                                //  23                   
 		if (tkk!=null)
-		{       
-			k=tkk.tverb;
-			tkk=getTravel(loc);
-			return(9);
+		{
+			gameData.k = tkk.tverb;
+			tkk=getTravel(gameData.loc);
+			return(tkk);
 		}
 		rspeak(140);
-		return(2);
+		return(null);
 	}
 	// ---------------------------------------------------------------------
 	int specials()                                      //  30000                
 	{
-		switch(newloc -= 300)
+		switch(gameData.newloc = gameData.newloc - 300)
 		{
 			case 1:                             //  30100                
-				newloc = 99+100-loc;
-				if (holdng==0||(holdng==1&&toting(emrald))) return(2);
-				newloc=loc;
+				gameData.newloc = 99 + 100 - gameData.loc;
+				if (gameData.holdng ==0||(gameData.holdng ==1&&toting(emrald))) return(2);
+				gameData.newloc = gameData.loc;
 				rspeak(117);
 				return(2);
 			case 2:                             //  30200                
-				drop(emrald,loc);
+				drop(emrald, gameData.loc);
 				return(12);
 			case 3:                             //  to 30300             
 				return(trbridge());
@@ -1485,43 +1493,43 @@ public class Adv32 extends Wizard
 	// ---------------------------------------------------------------------
 	int trbridge()                                      //  30300                
 	{       
-		if (prop[troll]==1)
+		if (gameData.prop[troll]==1)
 		{
 			pspeak(troll,1);
-			prop[troll]=0;
+			gameData.prop[troll]=0;
 			move(troll2,0);
 			move(troll2+FIXED_OBJECT_OFFSET,0);
 			move(troll,plac[troll]);
 			move(troll+FIXED_OBJECT_OFFSET,fixd[troll]);
 			juggle(chasm);
-			newloc=loc;
+			gameData.newloc = gameData.loc;
 			return(2);
 		}
-		newloc=plac[troll]+fixd[troll]-loc;     //  30310                
-		if (prop[troll]==0) prop[troll]=1;
+		gameData.newloc = plac[troll] + fixd[troll] - gameData.loc;     //  30310
+		if (gameData.prop[troll]==0) gameData.prop[troll]=1;
 		if (!toting(bear)) return(2);
 		rspeak(162);
-		prop[chasm]=1;
-		prop[troll]=2;
-		drop(bear,newloc);
-		fixed[bear] = -1;
-		prop[bear]=3;
-		if (prop[spices]<0) tally2++;
-		oldlc2=newloc;
+		gameData.prop[chasm]=1;
+		gameData.prop[troll]=2;
+		drop(bear, gameData.newloc);
+		gameData.fixed[bear] = -1;
+		gameData.prop[bear]=3;
+		if (gameData.prop[spices]<0) gameData.tally2++;
+		gameData.oldlc2 = gameData.newloc;
 		return(99);
 	}
 	// ---------------------------------------------------------------------
 	int badmove()                                       //  20                   
 	{
-		spk=12;
-		if (k>=43 && k<=50) spk=9;
-		if (k==29||k==30) spk=9;
-		if (k==7||k==36||k==37) spk=10;
-		if (k==11||k==19) spk=11;
-		if (verb==find||verb==invent) spk=59;
-		if (k==62||k==65) spk=42;
-		if (k==17) spk=80;
-		rspeak(spk);
+		gameData.spk = 12;
+		if (gameData.k >=43 && gameData.k <=50) gameData.spk = 9;
+		if (gameData.k ==29|| gameData.k ==30) gameData.spk = 9;
+		if (gameData.k ==7|| gameData.k ==36|| gameData.k ==37) gameData.spk = 10;
+		if (gameData.k ==11|| gameData.k ==19) gameData.spk = 11;
+		if (gameData.verb ==find|| gameData.verb ==invent) gameData.spk = 59;
+		if (gameData.k ==62|| gameData.k ==65) gameData.spk = 42;
+		if (gameData.k ==17) gameData.spk = 80;
+		rspeak(gameData.spk);
 		return(2);
 	}
 	// ---------------------------------------------------------------------
@@ -1536,9 +1544,9 @@ public class Adv32 extends Wizard
 	{       
 		for (int hint=4; hint<=hntmax; hint++)
 		{       
-			if (hinted[hint])
+			if (gameData.hinted[hint])
 				continue;
-			if (!bitset(loc,hint))
+			if (!bitset(gameData.loc,hint))
 				hintlc[hint]= -1;
 			hintlc[hint]++;
 			if (hintlc[hint] < getHint(hint, 1) )
@@ -1548,22 +1556,22 @@ public class Adv32 extends Wizard
 			switch(hint)
 			{   
 				case 4:     //  40400 
-					if (prop[grate]==0 && !here(keys)) break;
+					if (gameData.prop[grate]==0 && !here(keys)) break;
 					goto_140010 = false; break;
 				case 5:     //  40500 
-					if (here(bird)&&toting(rod)&&obj==bird) break;
+					if (here(bird)&&toting(rod)&& gameData.obj ==bird) break;
 					continue;      //  i.e. goto l40030 
 				case 6:     //  40600 
 					if (here(snake)&&!here(bird)) break;
 					goto_140010 = false; break;
 				case 7:     //  40700 
-					if (atloc[loc]==0
-						&& atloc[oldloc]==0
-						&& atloc[oldlc2]==0
-						&& holdng>1) break;
+					if (atloc[gameData.loc]==0
+						&& atloc[gameData.oldloc]==0
+						&& atloc[gameData.oldlc2]==0
+						&& gameData.holdng >1) break;
 					goto_140010 = false; break;
 				case 8:     //  40800 
-					if (prop[emrald]!= -1&&prop[pyram]== -1) break;
+					if (gameData.prop[emrald]!= -1&& gameData.prop[pyram]== -1) break;
 					goto_140010 = false; break;
 				case 9:
 					break;    //  40900 
@@ -1579,7 +1587,7 @@ public class Adv32 extends Wizard
 					+ "cost you {0} points.",
 					getHint(hint, 2)
 				);
-				hinted[hint]=yes(175, getHint(hint, 4),54);
+				gameData.hinted[hint]=yes(175, getHint(hint, 4),54);
 			}
 			// l40020: (falls through)
 			hintlc[hint]=0;
@@ -1594,7 +1602,7 @@ public class Adv32 extends Wizard
 		if (i==62||i==65||i==71||i==2025)
 		{
 			wd2=null;
-			obj=0;
+			gameData.obj = 0;
 			return(2630);
 		}
 		printf("Okay, \"{0}\".",wd2);
@@ -1604,38 +1612,38 @@ public class Adv32 extends Wizard
 	int trtake()                                        //  9010                 
 	{   
 		int i;
-		if (toting(obj)) return(L_PROMPT_SPK);  //  9010 
-		spk=25;
-		if (obj==plant&&prop[plant]<=0) spk=115;
-		if (obj==bear&&prop[bear]==1) spk=169;
-		if (obj==chain&&prop[bear]!=0) spk=170;
-		if (fixed[obj]!=0) return(L_PROMPT_SPK);
-		if (obj==water||obj==oil)
+		if (toting(gameData.obj)) return(L_PROMPT_SPK);  //  9010
+		gameData.spk = 25;
+		if (gameData.obj ==plant&& gameData.prop[plant]<=0) gameData.spk = 115;
+		if (gameData.obj ==bear&& gameData.prop[bear]==1) gameData.spk = 169;
+		if (gameData.obj ==chain&& gameData.prop[bear]!=0) gameData.spk = 170;
+		if (gameData.fixed[gameData.obj]!=0) return(L_PROMPT_SPK);
+		if (gameData.obj ==water|| gameData.obj ==oil)
 		{       
-			if (here(bottle)&&liq(0)==obj)
+			if (here(bottle)&&liq(0)== gameData.obj)
 			{
-				obj=bottle;
+				gameData.obj = bottle;
 				//goto l9017;
 			}
 			else
 			{
-				obj=bottle;
-				if (toting(bottle)&&prop[bottle]==1)
+				gameData.obj = bottle;
+				if (toting(bottle)&& gameData.prop[bottle]==1)
 					return(9220);
-				if (prop[bottle]!=1) spk=105;
-				if (!toting(bottle)) spk=104;
+				if (gameData.prop[bottle]!=1) gameData.spk = 105;
+				if (!toting(bottle)) gameData.spk = 104;
 				return(L_PROMPT_SPK);
 			}
 		}
 	//l9017:
-		if (holdng>=7)
+		if (gameData.holdng >=7)
 		{       
 			rspeak(92);
 			return(L_NEXT_MOVE);
 		}
-		if (obj==bird)
+		if (gameData.obj ==bird)
 		{       
-			if (prop[bird]==0)	//  goto l9014;
+			if (gameData.prop[bird]==0)	//  goto l9014;
 			{
 				if (toting(rod))
 				{       
@@ -1647,57 +1655,57 @@ public class Adv32 extends Wizard
 					rspeak(27);
 					return(L_NEXT_MOVE);
 				}
-				prop[bird]=1;           //  9015 
+				gameData.prop[bird]=1;           //  9015
 			}
 		}
 //	l9014:
-		if ((obj==bird||obj==cage)&&prop[bird]!=0)
-			carry(bird+cage-obj,loc);
-		carry(obj,loc);
-		k=liq(0);
-		if (obj==bottle && k!=0) place[k] = -1;
+		if ((gameData.obj ==bird|| gameData.obj ==cage)&& gameData.prop[bird]!=0)
+			carry(bird+cage- gameData.obj, gameData.loc);
+		carry(gameData.obj, gameData.loc);
+		gameData.k = liq(0);
+		if (gameData.obj ==bottle && gameData.k !=0) gameData.place[gameData.k] = -1;
 		return(L_PROMPT_OK);
 	}
 	// ---------------------------------------------------------------------
 	int dropper()                                       //  9021                 
 	{
-		k=liq(0);
-		if (k==obj) obj=bottle;
-		if (obj==bottle&&k!=0) place[k]=0;
-		if (obj==cage&&prop[bird]!=0) drop(bird,loc);
-		if (obj==bird) prop[bird]=0;
-		drop(obj,loc);
+		gameData.k = liq(0);
+		if (gameData.k == gameData.obj) gameData.obj = bottle;
+		if (gameData.obj ==bottle&& gameData.k !=0) gameData.place[gameData.k]=0;
+		if (gameData.obj ==cage&& gameData.prop[bird]!=0) drop(bird, gameData.loc);
+		if (gameData.obj ==bird) gameData.prop[bird]=0;
+		drop(gameData.obj, gameData.loc);
 		return(L_NEXT_MOVE);
 	}
 	// ---------------------------------------------------------------------
 	int trdrop()                                        //  9020                 
 	{
-		if (toting(rod2)&&obj==rod&&!toting(rod)) obj=rod2;
-		if (!toting(obj)) return(L_PROMPT_SPK);
-		if (obj==bird&&here(snake))
+		if (toting(rod2)&& gameData.obj ==rod&&!toting(rod)) gameData.obj = rod2;
+		if (!toting(gameData.obj)) return(L_PROMPT_SPK);
+		if (gameData.obj ==bird&&here(snake))
 		{       
 			rspeak(30);
 			if (isClosed) return(19000);
 			dstroy(snake);
-			prop[snake]=1;
+			gameData.prop[snake]=1;
 			return(dropper());
 		}
-		if (obj==coins&&here(vend))             //  9024                 
+		if (gameData.obj ==coins&&here(vend))             //  9024
 		{       
 			dstroy(coins);
-			drop(batter,loc);
+			drop(batter, gameData.loc);
 			pspeak(batter,0);
 			return(L_NEXT_MOVE);
 		}
-		if (obj==bird&&at(dragon)&&prop[dragon]==0)     //  9025         
+		if (gameData.obj ==bird&&at(dragon)&& gameData.prop[dragon]==0)     //  9025
 		{       
 			rspeak(154);
 			dstroy(bird);
-			prop[bird]=0;
-			if (place[snake]==plac[snake]) tally2--;
+			gameData.prop[bird]=0;
+			if (gameData.place[snake]==plac[snake]) gameData.tally2--;
 			return(L_NEXT_MOVE);
 		}
-		if (obj==bear&&at(troll))               //  9026                 
+		if (gameData.obj ==bear&&at(troll))               //  9026
 		{       
 			rspeak(163);
 			move(troll,0);
@@ -1705,77 +1713,77 @@ public class Adv32 extends Wizard
 			move(troll2,plac[troll]);
 			move(troll2+100,fixd[troll]);
 			juggle(chasm);
-			prop[troll]=2;
+			gameData.prop[troll]=2;
 			return(dropper());
 		}
-		if (obj!=vase||loc==plac[pillow])       //  9027                 
+		if (gameData.obj !=vase|| gameData.loc ==plac[pillow])       //  9027
 		{       
 			rspeak(54);
 			return(dropper());
 		}
-		prop[vase]=2;                           //  9028                 
-		if (at(pillow)) prop[vase]=0;
-		pspeak(vase,prop[vase]+1);
-		if (prop[vase]!=0) fixed[vase] = -1;
+		gameData.prop[vase]=2;                           //  9028
+		if (at(pillow)) gameData.prop[vase]=0;
+		pspeak(vase, gameData.prop[vase]+1);
+		if (gameData.prop[vase]!=0) gameData.fixed[vase] = -1;
 		return(dropper());
 	}
 	// ---------------------------------------------------------------------
 	int tropen()                                        //  9040                 
 	{       
-		if (obj==clam||obj==oyster)
-		{       
-			k=0;                            //  9046                 
-			if (obj==oyster) k=1;
-			spk=124+k;
-			if (toting(obj)) spk=120+k;
-			if (!toting(tridnt)) spk=122+k;
-			if (verb==lock) spk=61;
-			if (spk!=124) return(L_PROMPT_SPK);
+		if (gameData.obj ==clam|| gameData.obj ==oyster)
+		{
+			gameData.k = 0;                            //  9046
+			if (gameData.obj ==oyster) gameData.k = 1;
+			gameData.spk = 124 + gameData.k;
+			if (toting(gameData.obj)) gameData.spk = 120 + gameData.k;
+			if (!toting(tridnt)) gameData.spk = 122 + gameData.k;
+			if (gameData.verb ==lock) gameData.spk = 61;
+			if (gameData.spk !=124) return(L_PROMPT_SPK);
 			dstroy(clam);
-			drop(oyster,loc);
+			drop(oyster, gameData.loc);
 			drop(pearl,105);
 			return(L_PROMPT_SPK);
 		}
-		if (obj==door) spk=111;
-		if (obj==door&&prop[door]==1) spk=54;
-		if (obj==cage) spk=32;
-		if (obj==keys) spk=55;
-		if (obj==grate||obj==chain) spk=31;
-		if (spk!=31||!here(keys)) return(L_PROMPT_SPK);
-		if (obj==chain)
+		if (gameData.obj ==door) gameData.spk = 111;
+		if (gameData.obj ==door&& gameData.prop[door]==1) gameData.spk = 54;
+		if (gameData.obj ==cage) gameData.spk = 32;
+		if (gameData.obj ==keys) gameData.spk = 55;
+		if (gameData.obj ==grate|| gameData.obj ==chain) gameData.spk = 31;
+		if (gameData.spk !=31||!here(keys)) return(L_PROMPT_SPK);
+		if (gameData.obj ==chain)
 		{       
-			if (verb==lock)
-			{       
-				spk=172;                //  9049: lock           
-				if (prop[chain]!=0) spk=34;
-				if (loc!=plac[chain]) spk=173;
-				if (spk!=172) return(L_PROMPT_SPK);
-				prop[chain]=2;
-				if (toting(chain)) drop(chain,loc);
-				fixed[chain]= -1;
+			if (gameData.verb ==lock)
+			{
+				gameData.spk = 172;                //  9049: lock
+				if (gameData.prop[chain]!=0) gameData.spk = 34;
+				if (gameData.loc !=plac[chain]) gameData.spk = 173;
+				if (gameData.spk !=172) return(L_PROMPT_SPK);
+				gameData.prop[chain]=2;
+				if (toting(chain)) drop(chain, gameData.loc);
+				gameData.fixed[chain]= -1;
 				return(L_PROMPT_SPK);
 			}
-			spk=171;
-			if (prop[bear]==0) spk=41;
-			if (prop[chain]==0) spk=37;
-			if (spk!=171) return(L_PROMPT_SPK);
-			prop[chain]=0;
-			fixed[chain]=0;
-			if (prop[bear]!=3) prop[bear]=2;
-			fixed[bear]=2-prop[bear];
+			gameData.spk = 171;
+			if (gameData.prop[bear]==0) gameData.spk = 41;
+			if (gameData.prop[chain]==0) gameData.spk = 37;
+			if (gameData.spk !=171) return(L_PROMPT_SPK);
+			gameData.prop[chain]=0;
+			gameData.fixed[chain]=0;
+			if (gameData.prop[bear]!=3) gameData.prop[bear]=2;
+			gameData.fixed[bear]=2- gameData.prop[bear];
 			return(L_PROMPT_SPK);
 		}
 		if (isClosing)
-		{       
-			k=130;
-			if (!panic) clock2=15;
-			panic=true;
+		{
+			gameData.k = 130;
+			if (!gameData.panic) gameData.clock2 = 15;
+			gameData.panic = true;
 			return(L_PROMPT_K);
 		}
-		k=34+prop[grate];                       //  9043                 
-		prop[grate]=1;
-		if (verb==lock) prop[grate]=0;
-		k=k+2*prop[grate];
+		gameData.k = 34 + gameData.prop[grate];                       //  9043
+		gameData.prop[grate]=1;
+		if (gameData.verb ==lock) gameData.prop[grate]=0;
+		gameData.k = gameData.k + 2 * gameData.prop[grate];
 		return(L_PROMPT_K);
 	}
 //	// ---------------------------------------------------------------------
@@ -1846,7 +1854,7 @@ public class Adv32 extends Wizard
 		// l9175:  
 		rspeak(spk);
 		drop(axe,loc);
-		k=0;
+		gameData.k = 0;
 		return(8);
 	}
 
@@ -1854,12 +1862,12 @@ public class Adv32 extends Wizard
 	int trtoss()                                //  9170: throw
 	{   
 		int i;
-		if (toting(rod2)&&obj==rod&&!toting(rod)) obj=rod2;
-		if (!toting(obj)) return(L_PROMPT_SPK);
-		if (obj>=FIRST_TREASURE_INDEX && obj<=LAST_TREASURE_INDEX && at(troll))
-		{       
-			spk=159;                        //  9178                 
-			drop(obj,0);
+		if (toting(rod2)&& gameData.obj ==rod&&!toting(rod)) gameData.obj = rod2;
+		if (!toting(gameData.obj)) return(L_PROMPT_SPK);
+		if (gameData.obj >=FIRST_TREASURE_INDEX && gameData.obj <=LAST_TREASURE_INDEX && at(troll))
+		{
+			gameData.spk = 159;                        //  9178
+			drop(gameData.obj,0);
 			move(troll,0);
 			move(troll+100,0);
 			drop(troll2,plac[troll]);
@@ -1867,115 +1875,115 @@ public class Adv32 extends Wizard
 			juggle(chasm);
 			return(L_PROMPT_SPK);
 		}
-		if (obj==food&&here(bear))
-		{       
-			obj=bear;                       //  9177                 
+		if (gameData.obj ==food&&here(bear))
+		{
+			gameData.obj = bear;                       //  9177
 			return(9210);
 		}
-		if (obj!=axe) return(9020);
+		if (gameData.obj !=axe) return(9020);
 		for (i=1; i<=5; i++)
 		{       
-			if (dwarfLoc[i]==loc)
-			{       
-				spk=48;                 //  9172                 
+			if (gameData.dwarfLoc[i]== gameData.loc)
+			{
+				gameData.spk = 48;                 //  9172
 				if (ran(3)==0||saved!= -1)
-					return trtoss_exit( spk, axe,loc );
-				dwarfSeenAtLoc[i]=false;
-				dwarfLoc[i]=0;
-				spk=47;
-				dkill++;
-				if (dkill==1) spk=149;
-				return trtoss_exit( spk, axe,loc );
+					return trtoss_exit(gameData.spk, axe, gameData.loc);
+				gameData.dwarfSeenAtLoc[i]=false;
+				gameData.dwarfLoc[i]=0;
+				gameData.spk = 47;
+				gameData.dkill++;
+				if (gameData.dkill ==1) gameData.spk = 149;
+				return trtoss_exit(gameData.spk, axe, gameData.loc);
 				//goto l9175;
 			}
 		}
-		spk=152;
-		if (at(dragon)&&prop[dragon]==0)
-			return trtoss_exit( spk, axe,loc );
+		gameData.spk = 152;
+		if (at(dragon)&& gameData.prop[dragon]==0)
+			return trtoss_exit(gameData.spk, axe, gameData.loc);
 			//goto l9175;
-		spk=158;
+		gameData.spk = 158;
 		if (at(troll)) 
-			return trtoss_exit( spk, axe,loc );
+			return trtoss_exit(gameData.spk, axe, gameData.loc);
 			// goto l9175;
-		if (here(bear)&&prop[bear]==0)
-		{       
-			spk=164;
-			drop(axe,loc);
-			fixed[axe]= -1;
-			prop[axe]=1;
+		if (here(bear)&& gameData.prop[bear]==0)
+		{
+			gameData.spk = 164;
+			drop(axe, gameData.loc);
+			gameData.fixed[axe]= -1;
+			gameData.prop[axe]=1;
 			juggle(bear);
 			return(L_PROMPT_SPK);
 		}
-		obj=0;
+		gameData.obj = 0;
 		return(L_TRY_KILL);
 	}
 
 	// ---------------------------------------------------------------------
 	int trfeed()                                        //  9210                 
 	{       
-		if (obj==bird)
-		{       
-			spk=100;
+		if (gameData.obj ==bird)
+		{
+			gameData.spk = 100;
 			return(L_PROMPT_SPK);
 		}
-		if (obj==snake||obj==dragon||obj==troll)
-		{       
-			spk=102;
-			if (obj==dragon&&prop[dragon]!=0) spk=110;
-			if (obj==troll) spk=182;
-			if (obj!=snake|| isClosed ||!here(bird)) return(L_PROMPT_SPK);
-			spk=101;
+		if (gameData.obj ==snake|| gameData.obj ==dragon|| gameData.obj ==troll)
+		{
+			gameData.spk = 102;
+			if (gameData.obj ==dragon&& gameData.prop[dragon]!=0) gameData.spk = 110;
+			if (gameData.obj ==troll) gameData.spk = 182;
+			if (gameData.obj !=snake|| isClosed ||!here(bird)) return(L_PROMPT_SPK);
+			gameData.spk = 101;
 			dstroy(bird);
-			prop[bird]=0;
-			tally2++;
+			gameData.prop[bird]=0;
+			gameData.tally2++;
 			return(L_PROMPT_SPK);
 		}
-		if (obj==dwarf)
+		if (gameData.obj ==dwarf)
 		{       
 			if (!here(food)) return(L_PROMPT_SPK);
-			spk=103;
-			dflag++;
+			gameData.spk = 103;
+			gameData.dflag++;
 			return(L_PROMPT_SPK);
 		}
-		if (obj==bear)
+		if (gameData.obj ==bear)
 		{       
-			if (prop[bear]==0) spk=102;
-			if (prop[bear]==3) spk=110;
+			if (gameData.prop[bear]==0) gameData.spk = 102;
+			if (gameData.prop[bear]==3) gameData.spk = 110;
 			if (!here(food)) return(L_PROMPT_SPK);
 			dstroy(food);
-			prop[bear]=1;
-			fixed[axe]=0;
-			prop[axe]=0;
-			spk=168;
+			gameData.prop[bear]=1;
+			gameData.fixed[axe]=0;
+			gameData.prop[axe]=0;
+			gameData.spk = 168;
 			return(L_PROMPT_SPK);
 		}
-		spk=14;
+		gameData.spk = 14;
 		return(L_PROMPT_SPK);
 	}
 
 	// ---------------------------------------------------------------------
 	int trfill()                                        //  9220 
 	{       
-		if (obj==vase)
-		{       
-			spk=29;
-			if (liqloc(loc)==0) spk=144;
-			if (liqloc(loc)==0||!toting(vase)) return(L_PROMPT_SPK);
+		if (gameData.obj ==vase)
+		{
+			gameData.spk = 29;
+			if (liqloc(gameData.loc)==0) gameData.spk = 144;
+			if (liqloc(gameData.loc)==0||!toting(vase)) return(L_PROMPT_SPK);
 			rspeak(145);
-			prop[vase]=2;
-			fixed[vase]= -1;
+			gameData.prop[vase]=2;
+			gameData.fixed[vase]= -1;
 			return(9020);           //  advent/10 goes to 9024 
 		}
-		if (obj!=0&&obj!=bottle) return(L_PROMPT_SPK);
-		if (obj==0&&!here(bottle)) return(L_ASK_WHAT_OBJ);
-		spk=107;
-		if (liqloc(loc)==0) spk=106;
-		if (liq(0)!=0) spk=105;
-		if (spk!=107) return(L_PROMPT_SPK);
-		prop[bottle]=((cond[loc]%4)/2)*2;
-		k=liq(0);
-		if (toting(bottle)) place[k]= -1;
-		if (k==oil) spk=108;
+		if (gameData.obj !=0&& gameData.obj !=bottle) return(L_PROMPT_SPK);
+		if (gameData.obj ==0&&!here(bottle)) return(L_ASK_WHAT_OBJ);
+		gameData.spk = 107;
+		if (liqloc(gameData.loc)==0) gameData.spk = 106;
+		if (liq(0)!=0) gameData.spk = 105;
+		if (gameData.spk !=107) return(L_PROMPT_SPK);
+		gameData.prop[bottle]=((cond[gameData.loc]%4)/2)*2;
+		gameData.k = liq(0);
+		if (toting(bottle)) gameData.place[gameData.k]= -1;
+		if (gameData.k ==oil) gameData.spk = 108;
 		return(L_PROMPT_SPK);
 	}
 
@@ -1983,25 +1991,25 @@ public class Adv32 extends Wizard
 	int closing()                               //  10000 
 	{       
 		int i;
-	
-		prop[grate]=prop[fissur]=0;
+
+		gameData.prop[grate]= gameData.prop[fissur]=0;
 		for (i=1; i<=6; i++)
-		{       
-			dwarfSeenAtLoc[i]=false;
-			dwarfLoc[i]=0;
+		{
+			gameData.dwarfSeenAtLoc[i]=false;
+			gameData.dwarfLoc[i]=0;
 		}
 		move(troll,0);
 		move(troll+FIXED_OBJECT_OFFSET,0);
 		move(troll2,plac[troll]);
 		move(troll2+FIXED_OBJECT_OFFSET,fixd[troll]);
 		juggle(chasm);
-		if(prop[bear]!=3) dstroy(bear);
-		prop[chain]=0;
-		fixed[chain]=0;
-		prop[axe]=0;
-		fixed[axe]=0;
+		if(gameData.prop[bear]!=3) dstroy(bear);
+		gameData.prop[chain]=0;
+		gameData.fixed[chain]=0;
+		gameData.prop[axe]=0;
+		gameData.fixed[axe]=0;
 		rspeak(129);
-		clock1 = -1;
+		gameData.clock1 = -1;
 		isClosing = true;
 		return(19999);
 	}
@@ -2010,25 +2018,25 @@ public class Adv32 extends Wizard
 	int caveclose()                             //  11000 
 	{       
 		int i;
-		prop[bottle]=put(bottle,115,1);
-		prop[plant]=put(plant,115,0);
-		prop[oyster]=put(oyster,115,0);
-		prop[lamp]=put(lamp,115,0);
-		prop[rod]=put(rod,115,0);
-		prop[dwarf]=put(dwarf,115,0);
-		loc=115;
-		oldloc=115;
-		newloc=115;
+		gameData.prop[bottle]=put(bottle,115,1);
+		gameData.prop[plant]=put(plant,115,0);
+		gameData.prop[oyster]=put(oyster,115,0);
+		gameData.prop[lamp]=put(lamp,115,0);
+		gameData.prop[rod]=put(rod,115,0);
+		gameData.prop[dwarf]=put(dwarf,115,0);
+		gameData.loc = 115;
+		gameData.oldloc = 115;
+		gameData.newloc = 115;
 	
 		put(grate,116,0);
-		prop[snake]=put(snake,116,1);
-		prop[bird]=put(bird,116,1);
-		prop[cage]=put(cage,116,0);
-		prop[rod2]=put(rod2,116,0);
-		prop[pillow]=put(pillow,116,0);
-	
-		prop[mirror]=put(mirror,115,0);
-		fixed[mirror]=116;
+		gameData.prop[snake]=put(snake,116,1);
+		gameData.prop[bird]=put(bird,116,1);
+		gameData.prop[cage]=put(cage,116,0);
+		gameData.prop[rod2]=put(rod2,116,0);
+		gameData.prop[pillow]=put(pillow,116,0);
+
+		gameData.prop[mirror]=put(mirror,115,0);
+		gameData.fixed[mirror]=116;
 	
 		for (i=1; i<=FIXED_OBJECT_OFFSET; i++)
 			if (toting(i)) dstroy(i);
@@ -2041,38 +2049,38 @@ public class Adv32 extends Wizard
 	int score()   //  sort of like 20000   
 	{       
 		int scor,i;
-		mxscor=scor=0;
+		gameData.mxscor = scor = 0;
 		for (i=FIRST_TREASURE_INDEX; i<=LAST_TREASURE_INDEX; i++)
 		{	
 			if (! hasPText(i) ) continue;
-			k=12;
-			if (i==chest) k=14;
-			if (i>chest) k=16;
-			if (prop[i]>=0) scor += 2;
-			if (place[i]==3&&prop[i]==0) scor += k-2;
-			mxscor += k;
+			gameData.k = 12;
+			if (i==chest) gameData.k = 14;
+			if (i>chest) gameData.k = 16;
+			if (gameData.prop[i]>=0) scor += 2;
+			if (gameData.place[i]==3&& gameData.prop[i]==0) scor += gameData.k -2;
+			gameData.mxscor = gameData.mxscor + gameData.k;
 		}
-		scor += (maxdie-numdie)*10;
-		mxscor += maxdie*10;
-		if (!(isScoring ||gaveup)) scor += 4;
-		mxscor += 4;
-		if (dflag!=0) scor += 25;
-		mxscor += 25;
+		scor += (gameData.maxdie - gameData.numdie)*10;
+		gameData.mxscor = gameData.mxscor + gameData.maxdie * 10;
+		if (!(isScoring || gameData.gaveup)) scor += 4;
+		gameData.mxscor = gameData.mxscor + 4;
+		if (gameData.dflag !=0) scor += 25;
+		gameData.mxscor = gameData.mxscor + 25;
 		if (isClosing) scor += 25;
-		mxscor += 25;
+		gameData.mxscor = gameData.mxscor + 25;
 		if (isClosed)
-		{       if (bonus==0) scor += 10;
-			if (bonus==135) scor += 25;
-			if (bonus==134) scor += 30;
-			if (bonus==133) scor += 45;
+		{       if (gameData.bonus ==0) scor += 10;
+			if (gameData.bonus ==135) scor += 25;
+			if (gameData.bonus ==134) scor += 30;
+			if (gameData.bonus ==133) scor += 45;
 		}
-		mxscor += 45;
-		if (place[magzin]==108) scor++;
-		mxscor++;
+		gameData.mxscor = gameData.mxscor + 45;
+		if (gameData.place[magzin]==108) scor++;
+		gameData.mxscor++;
 		scor += 2;
-		mxscor += 2;
+		gameData.mxscor = gameData.mxscor + 2;
 		for (i=1; i<=hntmax; i++)
-			if (hinted[i]) scor -= getHint(i, 2);
+			if (gameData.hinted[i]) scor -= getHint(i, 2);
 		return(scor);
 	}
 
@@ -2087,8 +2095,8 @@ public class Adv32 extends Wizard
 		printf(
 			"You scored {0} out of a possible {1} using {2} turns.",
 			score,
-			mxscor,
-			turns
+			gameData.mxscor,
+			gameData.turns
 		);
 		printf("");
 		ClassMessage info = null;
@@ -2127,16 +2135,16 @@ public class Adv32 extends Wizard
 		if (entry != 99)
 		{
 			rspeak(23);
-			oldlc2=loc;
+			gameData.oldlc2 = gameData.loc;
 		}
 		if (isClosing)                             //  99
 		{
 			rspeak(131);
-			numdie++;
+			gameData.numdie++;
 			return done(2);
 		}
 
-		return initiateYes(81+numdie*2,82+numdie*2,54, L_RESURRECT_RESPONSE);
+		return initiateYes(81+ gameData.numdie *2,82+ gameData.numdie *2,54, L_RESURRECT_RESPONSE);
 
 		// Response processing is at label L_RESURRECT_RESPONSE
 	}
@@ -2153,8 +2161,8 @@ public class Adv32 extends Wizard
 	{       
 		int i,j;
 	
-		i=place[object];
-		j=fixed[object];
+		i= gameData.place[object];
+		j= gameData.fixed[object];
 		move(object,i);
 		move(object+FIXED_OBJECT_OFFSET,j);
 	}
@@ -2165,9 +2173,9 @@ public class Adv32 extends Wizard
 		int from;
 	
 		if (object<=FIXED_OBJECT_OFFSET)
-			from=place[object];
+			from= gameData.place[object];
 		else
-			from=fixed[object-FIXED_OBJECT_OFFSET];
+			from= gameData.fixed[object-FIXED_OBJECT_OFFSET];
 		if (from>0 && from<=300) carry(object,from);
 		drop(object,where);
 	}
@@ -2185,32 +2193,32 @@ public class Adv32 extends Wizard
 	
 		if (object<=FIXED_OBJECT_OFFSET)
 		{       
-			if (place[object]== -1) return;
-			place[object] = -1;
-			holdng++;
+			if (gameData.place[object]== -1) return;
+			gameData.place[object] = -1;
+			gameData.holdng++;
 		}
 		if (atloc[where]==object)
 		{       
-			atloc[where]=link[object];
+			atloc[where]= gameData.link[object];
 			return;
 		}
-		for (temp=atloc[where]; link[temp]!=object; temp=link[temp]);
-		link[temp]=link[object];
+		for (temp=atloc[where]; gameData.link[temp]!=object; temp= gameData.link[temp]);
+		gameData.link[temp]= gameData.link[object];
 	}
 	
 	
 	void drop(int object, int where)
 	{	
 		if (object>FIXED_OBJECT_OFFSET)
-			fixed[object-FIXED_OBJECT_OFFSET]=where;
+			gameData.fixed[object-FIXED_OBJECT_OFFSET]=where;
 		else
 		{       
-			if (place[object]== -1) holdng--;
-			place[object]=where;
+			if (gameData.place[object]== -1) gameData.holdng--;
+			gameData.place[object]=where;
 		}
 		if (where<=0) 
 			return;
-		link[object]=atloc[where];
+		gameData.link[object]=atloc[where];
 		atloc[where]=object;
 	}
 	// ======================================================================
@@ -2255,21 +2263,21 @@ public class Adv32 extends Wizard
 			}
 		}
 		for (j=LAST_OBJECT_INDEX; j>0; j--)
-		{       
-			fixed[j]=fixd[j];
+		{
+			gameData.fixed[j]=fixd[j];
 			if (plac[j]!=0 && fixd[j]<=0)
 				drop(j,plac[j]);
 		}
-		tally=0;
-		tally2=0;
+		gameData.tally = 0;
+		gameData.tally2 = 0;
 	
 		for (i=FIRST_TREASURE_INDEX; i<=LAST_TREASURE_INDEX; i++)
 		{       
 			if ( hasPText(i) ) 
 			{
-				prop[i] = -1;
+				gameData.prop[i] = -1;
 			}
-			tally -= prop[i];
+			gameData.tally = gameData.tally - gameData.prop[i];
 		}
 	
 		//  define mnemonics 
@@ -2337,40 +2345,40 @@ public class Adv32 extends Wizard
 		invent = vocab("inven", Usage.VERB);
 	
 		//  initialize dwarves 
-		chloc=114;
-		chloc2=140;
+		gameData.chloc = 114;
+		gameData.chloc2 = 140;
 		for (i=1; i<=6; i++)
 		{
-			dwarfSeenAtLoc[i]=false;
+			gameData.dwarfSeenAtLoc[i]=false;
 		}
-		dflag=0;
-		dwarfLoc[1]=19;
-		dwarfLoc[2]=27;
-		dwarfLoc[3]=33;
-		dwarfLoc[4]=44;
-		dwarfLoc[5]=64;
-		dwarfLoc[6]=chloc;
-		daltlc=18;
+		gameData.dflag = 0;
+		gameData.dwarfLoc[1]=19;
+		gameData.dwarfLoc[2]=27;
+		gameData.dwarfLoc[3]=33;
+		gameData.dwarfLoc[4]=44;
+		gameData.dwarfLoc[5]=64;
+		gameData.dwarfLoc[6]= gameData.chloc;
+		gameData.daltlc = 18;
 	
 		//  random flags & ctrs 
-		turns=0;
-		lmwarn=false;
-		iwest=0;
-		knfloc=0;
-		detail=0;
-		abbnum=5;
+		gameData.turns = 0;
+		gameData.lmwarn = false;
+		gameData.iwest = 0;
+		gameData.knfloc = 0;
+		gameData.detail = 0;
+		gameData.abbnum = 5;
 		for (i=0; i<=4; i++)
 		{
 			if (hasRText(2*i+81) )
 			{
-				maxdie=i+1;
+				gameData.maxdie = i + 1;
 			}
 		}
-		numdie=holdng=dkill=foobar=bonus=0;
-		clock1=30;
-		clock2=50;
-		saved_last_usage=0;
-		isClosing =panic= isClosed = isScoring =false;
+		gameData.numdie = gameData.holdng = gameData.dkill = gameData.foobar = gameData.bonus = 0;
+		gameData.clock1 = 30;
+		gameData.clock2 = 50;
+		gameData.saved_last_usage = 0;
+		isClosing = gameData.panic = isClosed = isScoring = false;
 	}
 	// ---------------------------------------------------------------------
 	private void parseUserInputLine(String line)
