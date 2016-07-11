@@ -757,7 +757,7 @@ public class DataFile extends AdvGameData
 		}
 	}
 
-	private String getPlaceDescription(int placeId) {
+	String getPlaceDescription(int placeId) {
 		MessageList messageList = getMessageListForPlace(placeId);
 		return (messageList != null) ? messageList.get(0) : "????";
 	}

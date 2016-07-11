@@ -616,9 +616,13 @@ public class Adv32 extends Wizard
 						case 25:                    //  foo: 8250
 							gameData.k = vocab(wd1, Usage.MAGIC);
 							gameData.spk = 42;
-							if (gameData.foobar ==1- gameData.k) {next_label=8252; continue;}
+							if (gameData.foobar == 1- gameData.k) {
+								next_label=8252; continue;
+							}
 							if (gameData.foobar !=0) gameData.spk = 151;
-						{next_label=L_PROMPT_SPK; continue;}
+							{
+								next_label=L_PROMPT_SPK; continue;
+							}
 						case 26:                    //  brief=8260
 							gameData.spk = 156;
 							gameData.abbnum = 10000;
@@ -677,7 +681,7 @@ public class Adv32 extends Wizard
 					dstroy(food);
 					gameData.spk = 72;
 				{next_label=L_PROMPT_SPK; continue;}
-				case 8252:
+				case 8252:{
 					gameData.foobar = gameData.k;
 					if (gameData.k !=4) {next_label=L_PROMPT_OK; continue;}
 					gameData.foobar = 0;
@@ -685,12 +689,13 @@ public class Adv32 extends Wizard
 						||(toting(eggs)&& gameData.loc ==plac[eggs])) {next_label=L_PROMPT_SPK; continue;}
 					if (gameData.place[eggs]==0&& gameData.place[troll]==0&& gameData.prop[troll]==0)
 						gameData.prop[troll]=1;
-					gameData.k = 2;
-					if (here(eggs)) gameData.k = 1;
-					if (gameData.loc ==plac[eggs]) gameData.k = 0;
+					int msgix = 2;
+					if (here(eggs)) msgix = 1;
+					if (gameData.loc ==plac[eggs]) msgix = 0;
 					move(eggs,plac[eggs]);
-					pspeak(eggs, gameData.k);
-				{next_label=L_NEXT_MOVE; continue;}
+					pspeak(eggs, msgix);
+					next_label=L_NEXT_MOVE; continue;
+				}
 
 				case 4090:
 					// FLATTEN THIS SWITCH;
@@ -1140,9 +1145,13 @@ public class Adv32 extends Wizard
 		{
 			if (gameData.dwarfLoc[dwarfid]==0) continue;
 			int newdwarfid=1;
-			for (TravList travList = getTravel(gameData.dwarfLoc[dwarfid]); travList!=null; travList=travList.next)
+			NavConfig navConfig = navConfigs.get(gameData.dwarfLoc[dwarfid]);
+//			for (TravList travList = getTravel(gameData.dwarfLoc[dwarfid]);
+// 				travList!=null;
+// 				travList=travList.next)
+			for(NavConfigEntry navConfigEntry : navConfig.entries)
 			{
-				gameData.newloc = travList.tloc;
+				gameData.newloc = navConfigEntry.destLoc;
 				if (gameData.newloc >300
 					|| gameData.newloc <15
 					|| gameData.newloc == gameData.odloc[dwarfid]
@@ -1151,7 +1160,7 @@ public class Adv32 extends Wizard
 					|| gameData.newloc == gameData.dwarfLoc[dwarfid]
 					||forced(gameData.newloc)
 					||(dwarfid==6&&bitset(gameData.newloc,3))
-					||travList.conditions==100)
+					||navConfigEntry.conditions==100)
 				{
 					continue;
 				}
@@ -1165,6 +1174,7 @@ public class Adv32 extends Wizard
 			gameData.dwarfSeenAtLoc[dwarfid]=(gameData.dwarfSeenAtLoc[dwarfid]&& gameData.loc >=15)||(gameData.dwarfLoc[dwarfid]== gameData.loc || gameData.odloc[dwarfid]== gameData.loc);
 			if (!gameData.dwarfSeenAtLoc[dwarfid]) continue;        /* i.e. goto 6030 */
 			gameData.dwarfLoc[dwarfid]= gameData.loc;
+			printf("Dwarf {0} moved to {1}", dwarfid, getPlaceDescription(gameData.loc) );
 			if (dwarfid==6)                       /* pirate's spotted him */
 			{
 				int next_label = 0;
@@ -2252,12 +2262,15 @@ public class Adv32 extends Wizard
 	{       
 		int i,j;
 		// array linkages          
-		for (i=1; i<=LAST_LOCATION_INDEX; i++)
+		for (int loc=1; loc<=LAST_LOCATION_INDEX; loc++)
 		{
-			TravList travel = getTravel(i);
-			if (hasLText(i) && travel != null)
+			NavConfig navConfig = navConfigs.get(loc);
+			if (hasLText(loc) && navConfig.entries.size() > 0)
 			{
-				if ((travel.tverb)==1) cond[i]=2;
+				if ((navConfig.entries.get(0).verbIdSet.get(1))) {
+					cond[loc] = 2;
+					DP("Set cond=2 for loc"+loc);
+				}
 			}
 		}
 		for (j=LAST_OBJECT_INDEX; j>0; j--)
