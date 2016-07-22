@@ -74,6 +74,8 @@ public class Adv32 extends Wizard
 	private final static int L_USER_INPUT=2600;
 	private final static int L_PARSE_USER_INPUT=2608;
 	private final static int L_PROCESS_USER_INPUT=2609;
+	private final static int L_DISPATCH_ON_WD1_HINT=2610;
+	private final static int L_DISPATCH_ON_WD1=2630;
 	private final static int L_OBJECT_FOR_VERB=2800;
 	private final static int L_HANDLE_VERB=4090;
 
@@ -489,12 +491,13 @@ public class Adv32 extends Wizard
 						gameData.spk = rspk;
 						next_label= L_PROMPT_SPK; continue;
 					}
-					if (weq(wd1,"enter") && wd2!=null)
-					{next_label=L_OBJECT_FOR_VERB; continue;}
-					if ((!weq(wd1,"water")&&!weq(wd1,"oil"))
+					if (weq(wd1,"enter") && wd2!=null) {
+						next_label=L_OBJECT_FOR_VERB; continue;
+					}
+					if ((!weq(wd1,"water") && !weq(wd1,"oil"))
 						|| (!weq(wd2,"plant")&&!weq(wd2,"door")))
 					{
-						next_label=2610; continue;
+						next_label=L_DISPATCH_ON_WD1_HINT; continue;
 					}
 					if (at(vocab(wd2,Usage.OBJECT)))
 					{
@@ -502,12 +505,13 @@ public class Adv32 extends Wizard
 					}
 				}
 
-				case 2610:
-					// gameData.verb is the first word, wd1 is the second (object)
+				case L_DISPATCH_ON_WD1_HINT:
+					// gameData.verb is the first word
+					// wd1 is the second (object)
 					if (weq(wd1,"west")) {
 						if (gameData.iwest++ ==10) rspeak(17);
 					}
-				case 2630:
+				case L_DISPATCH_ON_WD1:
 				{
 					VocabEntry entry = vocabEntry(wd1, Usage.ANY);
 					if (entry == null) {
@@ -520,7 +524,6 @@ public class Adv32 extends Wizard
 							continue;
 						}
 					}
-					gameData.k = entry.id;
 					switch (entry.usage) {
 						case DESTINATION: {
 							gameData.dest = entry.id;
@@ -538,7 +541,7 @@ public class Adv32 extends Wizard
 							continue;
 						}
 						case MAGIC: {
-							// Say: Plugh, Plover, XYZZY, FEE
+							// Most Magic words map to a message
 							gameData.spk = entry.id;
 							next_label = L_PROMPT_SPK;
 							continue;
@@ -550,7 +553,7 @@ public class Adv32 extends Wizard
 					}
 				}
 				case L_TO_DESTINATION: {
-					// On Entry, gameData.k has the "destination word id"
+					// On Entry, gameData.dest has the "destination word id"
 					switch(march(gameData.dest))
 					{
 						case L_AFTER_NAV:
@@ -570,21 +573,26 @@ public class Adv32 extends Wizard
 				}
 
 				case L_OBJECT_FOR_VERB:
-					wd1 = wd2;
+				{	wd1 = wd2;
 					wd2=null;
-				{next_label=2610; continue;}
+					next_label=L_DISPATCH_ON_WD1_HINT; continue;
+				}
 
 				case L_TO_VERB:
 					gameData.spk = actspk[gameData.verb];
 					if (wd2!=null && gameData.verb !=say)
 					{
-						next_label=L_OBJECT_FOR_VERB; continue;
+						// have a verb, get the object
+						next_label=L_OBJECT_FOR_VERB;
+						continue;
 					}
-					if (gameData.verb ==say) {
+					if (gameData.verb == say) {
 						gameData.obj = wd2.charAt(0); //TODO::CHECK THIS *wd2;
 					}
 					if (gameData.obj !=0) {
-						next_label=L_HANDLE_VERB; continue;
+						// Have an object and a verb
+						next_label=L_HANDLE_VERB;
+						continue;
 					}
 				case 4080:
 					switch(gameData.verb)
@@ -765,7 +773,7 @@ public class Adv32 extends Wizard
 						case 28:
 						case 29:
 						{
-							next_label=(9000+ gameData.verb *10); continue;
+							next_label=(9000 + gameData.verb * 10); continue;
 						}
 
 						case 10: case 11: case 18:  //  calm, walk, quit
@@ -799,7 +807,7 @@ public class Adv32 extends Wizard
 					switch(trsay())
 					{
 						case L_NEXT_MOVE: {next_label=L_NEXT_MOVE; continue;}
-						case 2630: {next_label=2630; continue;}
+						case L_DISPATCH_ON_WD1: {next_label=L_DISPATCH_ON_WD1; continue;}
 						default: bug(107);
 					}
 				case 9040: 	//  open, close
@@ -1048,14 +1056,15 @@ public class Adv32 extends Wizard
 				// END FLATTEND SWITCH }
 
 				case L_TO_OBJECT:
-					if (gameData.fixed[gameData.obj]!= gameData.loc && !here(gameData.obj))
+					if (gameData.fixed[gameData.obj] != gameData.loc
+						&& !here(gameData.obj))
 					{
 						{next_label=5100; continue;}
 					}
 				case 5010:
 				{
 					if (wd2!=null) {
-						next_label=2800; continue;
+						next_label=L_OBJECT_FOR_VERB; continue;
 					}
 					if (gameData.verb !=0) {next_label=L_HANDLE_VERB; continue;}
 					printf("What do you want to do with the {0}?",wd1);
@@ -1401,11 +1410,10 @@ public class Adv32 extends Wizard
 		}
 		if (destWord == back)                            //  20
 		{
-			nce = mback(nce);
-			if(nce == null) {
+			destWord = mback(nce);
+			if(destWord == -1) {
 				return L_AFTER_NAV;
 			}
-			destWord = gameData.k;
 		}
 		else
 		{
@@ -1550,7 +1558,7 @@ public class Adv32 extends Wizard
 	}
 
 	// ---------------------------------------------------------------------
-	NavConfigEntry mback(NavConfigEntry nce)                                         //  20
+	int mback(NavConfigEntry nce)                                         //  20
 	{
 		NavConfigEntry firstEntry = nce;
 
@@ -1564,7 +1572,7 @@ public class Adv32 extends Wizard
 		if (cameFromLoc == gameData.loc)
 		{       
 			rspeak(91);		// Can't Remember
-			return(null);
+			return(-1);
 		}
 		for (; nce!=null; nce=nce.next)           //  21
 		{
@@ -1572,8 +1580,7 @@ public class Adv32 extends Wizard
 			if (tloc== cameFromLoc)
 			{
 				// Set the Word to use to get back ....
-				gameData.k = nce.verbIdSet.nextSetBit(0);
-				return(firstEntry);
+				return nce.verbIdSet.nextSetBit(0);
 			}
 			if (tloc<=300)
 			{
@@ -1585,11 +1592,10 @@ public class Adv32 extends Wizard
 		nce=tk2;                                //  23
 		if (nce!=null)
 		{
-			gameData.k = nce.verbIdSet.nextSetBit(0);           //  k back to verb
-			return(firstEntry);
+			return nce.verbIdSet.nextSetBit(0);           //  k back to verb
 		}
 		rspeak(140);		// Unable
-		return(null);
+		return(-1);
 	}
 	// ---------------------------------------------------------------------
 	int specials()                                      //  30000                
@@ -1715,7 +1721,7 @@ public class Adv32 extends Wizard
 		}
 	}
 	// ---------------------------------------------------------------------
-	int trsay()                                         //  9030                 
+	int trsay()                                         //  9030
 	{   
 		if (wd2!=null ) wd1 = wd2;
 		VocabEntry entry = vocabEntry(wd1, Usage.ANY);
@@ -1724,7 +1730,7 @@ public class Adv32 extends Wizard
 		{
 			wd2=null;
 			gameData.obj = 0;
-			return(2630);
+			return(L_DISPATCH_ON_WD1);
 		}
 		printf("Okay, \"{0}\".",wd2);
 		return(L_NEXT_MOVE);
