@@ -13,6 +13,7 @@ public class GameData implements Serializable {
 	public int clock2;
 	public int daltlc;
 	public boolean demo;
+	public int dest;
 	public int detail;
 	public int dflag;
 	public int dkill;
@@ -22,7 +23,6 @@ public class GameData implements Serializable {
 	public int holdng;
 	public int iwest;
 	public int k;
-	public int k2;
 	public int knfloc;
 	public int kq;
 	public int latncy;
@@ -40,7 +40,6 @@ public class GameData implements Serializable {
 	public int saved_last_usage;
 	public boolean scorng;
 	public int spk;
-	public int stick;
 	public int tally;
 	public int tally2;
 	public int turns;

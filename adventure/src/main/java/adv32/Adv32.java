@@ -67,13 +67,15 @@ public class Adv32 extends Wizard
 	private final static int L_RESURRECT_RESPONSE=10;
 	private final static int L_YES_QUERY =33;
 	private final static int L_YES_RESPONSE=34;
+	private final static int L_PROCESS_LOCATION=2000;
 	private final static int L_PROMPT_OK=2009;
-	private final static int L_DO_MAGIC =2010;
 	private final static int L_PROMPT_SPK=2011;
 	private final static int L_NEXT_MOVE=2012;
 	private final static int L_USER_INPUT=2600;
 	private final static int L_PARSE_USER_INPUT=2608;
 	private final static int L_PROCESS_USER_INPUT=2609;
+	private final static int L_OBJECT_FOR_VERB=2800;
+	private final static int L_HANDLE_VERB=4090;
 
 	private final static int L_CHECK_FOR_REALLY_QUIT=4081;
 	private final static int L_CHECK_FOR_QUIT=4082;
@@ -273,13 +275,13 @@ public class Adv32 extends Wizard
 					for (int i=FIXED_OBJECT_OFFSET; i>=1; i--)
 					{
 						if (!toting(i)) continue;
-						gameData.k = gameData.oldlc2;
-						if (i==lamp) gameData.k = 1;
-						drop(i, gameData.k);
+						int newLoc = gameData.oldlc2;
+						if (i==lamp) newLoc = 1;
+						drop(i, newLoc);
 					}
 					gameData.loc = 3;
 					gameData.oldloc = gameData.loc;
-					next_label = 2000;
+					next_label = L_PROCESS_LOCATION;
 					continue;
 
 				}
@@ -306,19 +308,24 @@ public class Adv32 extends Wizard
 					}
 
 				case L_AFTER_NAV:
+				{
 					if (gameData.newloc <9 && gameData.newloc !=0 && isClosing)
 					{
-						rspeak(130);    //  if closing leave only by
-						gameData.newloc = gameData.loc;     //       main office
+						rspeak(130);    //  if closing leave only by main office
+						gameData.newloc = gameData.loc;
 						if (!gameData.panic) gameData.clock2 = 15;
 						gameData.panic = true;
 					}
-				{
 					int rval=fdwarf();          //  dwarf stuff
-					if (rval==99)  {next_label = die(99); continue;}
+					if (rval==99) {
+						next_label = die(99); continue;
+					}
 				}
-				case 2000:
-					if (gameData.loc ==0) {next_label = die(99); continue;}
+				case L_PROCESS_LOCATION:
+				{
+					if (gameData.loc ==0) {
+						next_label = die(99); continue;
+					}
 //TODO:: Fix This
 					temp_mlist = getSText(gameData.loc);
 					if ((abb[gameData.loc]% gameData.abbnum)==0 || temp_mlist == null)
@@ -331,12 +338,12 @@ public class Adv32 extends Wizard
 						}
 						temp_mlist = getRText(16);
 					}
-				case 2001:
 					if (toting(bear)) rspeak(141);  //  2001
 					speak(temp_mlist);
-					gameData.k = 1;
-					if (forced(gameData.loc))
-					{next_label=8; continue;}
+					gameData.dest = 1;
+					if (forced(gameData.loc)) {
+						next_label=L_TO_DESTINATION; continue;
+					}
 					if (gameData.loc ==33 && pct(25)&&!isClosing) rspeak(8);
 					// FLATTEN
 					//if (!dark(0))
@@ -368,16 +375,17 @@ public class Adv32 extends Wizard
 							pspeak(gameData.obj, propid);
 						}
 					}                                       //  2008
-				{next_label=L_NEXT_MOVE; continue;}
+					next_label=L_NEXT_MOVE; continue;
+				}
 				case L_YES_QUERY:
 					return yesQuery(queryState);
 				case L_YES_RESPONSE:
-				{next_label=yesResponse(queryState, crankInput.userInput); continue;}
+				{
+					next_label=yesResponse(queryState, crankInput.userInput); continue;
+				}
 
 				case L_PROMPT_OK:
-					gameData.k = 54;                   //  2009
-				case L_DO_MAGIC:
-					gameData.spk = gameData.k;
+					gameData.spk = 54;                   //  2009
 				case L_PROMPT_SPK:
 					rspeak(gameData.spk);
 					// ENDFLATTEN }
@@ -415,21 +423,31 @@ public class Adv32 extends Wizard
 					if (gameData.demo && gameData.turns >=TURNS_IN_A_DEMO_GAME) {next_label=done(1); continue;}
 					;      //  to 13000
 
-					if (gameData.verb ==say && wd2!=null) gameData.verb = 0;
+					if (gameData.verb ==say && wd2!=null) {
+						gameData.verb = 0;
+					}
 					if (gameData.verb ==say)
-					{next_label=4090; continue;}
-					if (gameData.tally ==0 && gameData.loc >=15 && gameData.loc !=33) gameData.clock1--;
+					{
+						next_label=L_HANDLE_VERB; continue;
+					}
+					if (gameData.tally ==0 && gameData.loc >=15 && gameData.loc !=33) {
+						gameData.clock1--;
+					}
 					if (gameData.clock1 ==0)
 					{       closing();                      //  to 10000
 						{next_label=19999; continue;}
 					}
-					if (gameData.clock1 <0) gameData.clock2--;
+					if (gameData.clock1 <0) {
+						gameData.clock2--;
+					}
 					if (gameData.clock2 ==0)
 					{
 						caveclose();            //  to 11000
 						{next_label=2; continue;} //  back to 2
 					}
-					if (gameData.prop[lamp]==1) gameData.limit--;
+					if (gameData.prop[lamp]==1) {
+						gameData.limit--;
+					}
 					if (gameData.limit <=30 && here(batter) && gameData.prop[batter]==0
 						&& here(lamp))
 					{
@@ -462,14 +480,17 @@ public class Adv32 extends Wizard
 						if (gameData.prop[batter]==1) gameData.spk = 189;
 						rspeak(gameData.spk);
 					}
-				case 19999:
-					gameData.k = 43;
-					if (liqloc(gameData.loc)==water) gameData.k = 70;
+				case 19999: {
+					int rspk = 43;
+					if (liqloc(gameData.loc)==water) rspk = 70;
 					if (weq(wd1,"enter") &&
 						(weq(wd2,"strea")||weq(wd2,"water")))
-					{next_label= L_DO_MAGIC; continue;}
+					{
+						gameData.spk = rspk;
+						next_label= L_PROMPT_SPK; continue;
+					}
 					if (weq(wd1,"enter") && wd2!=null)
-					{next_label=2800; continue;}
+					{next_label=L_OBJECT_FOR_VERB; continue;}
 					if ((!weq(wd1,"water")&&!weq(wd1,"oil"))
 						|| (!weq(wd2,"plant")&&!weq(wd2,"door")))
 					{
@@ -479,10 +500,13 @@ public class Adv32 extends Wizard
 					{
 						wd2 = "pour";
 					}
+				}
 
 				case 2610:
-					if (weq(wd1,"west"))
+					// gameData.verb is the first word, wd1 is the second (object)
+					if (weq(wd1,"west")) {
 						if (gameData.iwest++ ==10) rspeak(17);
+					}
 				case 2630:
 				{
 					VocabEntry entry = vocabEntry(wd1, Usage.ANY);
@@ -499,19 +523,24 @@ public class Adv32 extends Wizard
 					gameData.k = entry.id;
 					switch (entry.usage) {
 						case DESTINATION: {
+							gameData.dest = entry.id;
 							next_label = L_TO_DESTINATION;
 							continue;
 						}
 						case OBJECT: {
+							gameData.obj = entry.id;
 							next_label = L_TO_OBJECT;
 							continue;
 						}
 						case VERB: {
+							gameData.verb = entry.id;
 							next_label = L_TO_VERB;
 							continue;
 						}
 						case MAGIC: {
-							next_label = L_DO_MAGIC;
+							// Say: Plugh, Plover, XYZZY, FEE
+							gameData.spk = entry.id;
+							next_label = L_PROMPT_SPK;
 							continue;
 						}
 						default:
@@ -521,14 +550,18 @@ public class Adv32 extends Wizard
 					}
 				}
 				case L_TO_DESTINATION: {
-					switch(march())
+					// On Entry, gameData.k has the "destination word id"
+					switch(march(gameData.dest))
 					{
 						case L_AFTER_NAV:
 						{next_label=L_AFTER_NAV; continue;} //  back to 2
 						case 99:
 							switch(die(99))
 							{
-								case 2000: {next_label=2000; continue;}
+								case L_PROCESS_LOCATION:
+								{
+									next_label=L_PROCESS_LOCATION; continue;
+								}
 								default: bug(111);
 							}
 						default:
@@ -536,30 +569,36 @@ public class Adv32 extends Wizard
 					}
 				}
 
-				case 2800:
+				case L_OBJECT_FOR_VERB:
 					wd1 = wd2;
 					wd2=null;
 				{next_label=2610; continue;}
 
 				case L_TO_VERB:
-					gameData.verb = gameData.k;
 					gameData.spk = actspk[gameData.verb];
 					if (wd2!=null && gameData.verb !=say)
-					{next_label=2800; continue;}
-					if (gameData.verb ==say) gameData.obj = wd2.charAt(0); //TODO::CHECK THIS *wd2;
-					if (gameData.obj !=0) {next_label=4090; continue;}
+					{
+						next_label=L_OBJECT_FOR_VERB; continue;
+					}
+					if (gameData.verb ==say) {
+						gameData.obj = wd2.charAt(0); //TODO::CHECK THIS *wd2;
+					}
+					if (gameData.obj !=0) {
+						next_label=L_HANDLE_VERB; continue;
+					}
 				case 4080:
 					switch(gameData.verb)
-					{   case 1:                     //  take = 8010
-						if (atloc[gameData.loc]==0 || gameData.link[atloc[gameData.loc]] != 0)
-						{next_label=L_ASK_WHAT_OBJ; continue;}
-						for (int temp_i=1; temp_i<=5; temp_i++)
-						{
-							if (gameData.dwarfLoc[temp_i]== gameData.loc && gameData.dflag >=2)
+					{   case 1:  {                   //  take = 8010
+							if (atloc[gameData.loc]==0 || gameData.link[atloc[gameData.loc]] != 0)
 							{next_label=L_ASK_WHAT_OBJ; continue;}
+							for (int temp_i=1; temp_i<=5; temp_i++)
+							{
+								if (gameData.dwarfLoc[temp_i]== gameData.loc && gameData.dflag >=2)
+								{next_label=L_ASK_WHAT_OBJ; continue;}
+							}
+							gameData.obj = atloc[gameData.loc];
+							next_label=9010; continue;
 						}
-						gameData.obj = atloc[gameData.loc];
-					{next_label=9010; continue;}
 						case 2: case 3: case 9:     //  L_ASK_WHAT_OBJ : drop,say,wave
 						case 10: case 16: case 17:  //  calm,rub,toss
 						case 19: case 21: case 28:  //  find,feed,break
@@ -614,9 +653,10 @@ public class Adv32 extends Wizard
 							isScoring =false;
 							{next_label=initiateYes(143,54,54, L_CHECK_FOR_REALLY_QUIT); continue;}
 						case 25: {                //  foo: 8250
-							gameData.k = vocab(wd1, Usage.MAGIC);
+							int mword = vocab(wd1, Usage.MAGIC);
 							gameData.spk = 42;
-							if (gameData.foobar == 1- gameData.k) {
+							if (gameData.foobar == 1- mword) {
+								gameData.foobar = mword;
 								next_label=8252; continue;
 							}
 							if (gameData.foobar !=0) {
@@ -683,8 +723,7 @@ public class Adv32 extends Wizard
 					gameData.spk = 72;
 				{next_label=L_PROMPT_SPK; continue;}
 				case 8252:{
-					gameData.foobar = gameData.k;
-					if (gameData.k !=4) {next_label=L_PROMPT_OK; continue;}
+					if (gameData.foobar !=4) {next_label=L_PROMPT_OK; continue;}
 					gameData.foobar = 0;
 					if (gameData.place[eggs]==plac[eggs]
 						||(toting(eggs)&& gameData.loc ==plac[eggs])) {next_label=L_PROMPT_SPK; continue;}
@@ -698,7 +737,7 @@ public class Adv32 extends Wizard
 					next_label=L_NEXT_MOVE; continue;
 				}
 
-				case 4090:
+				case L_HANDLE_VERB:
 					// FLATTEN THIS SWITCH;
 					switch(gameData.verb)
 					{
@@ -725,12 +764,16 @@ public class Adv32 extends Wizard
 						case 27:
 						case 28:
 						case 29:
-						{next_label=(9000+ gameData.verb *10); continue;}
+						{
+							next_label=(9000+ gameData.verb *10); continue;
+						}
 
 						case 10: case 11: case 18:  //  calm, walk, quit
 						case 24: case 25: case 26:  //  score, foo, brief
 						case 30: case 31:           //  suspend, hours
-					{next_label=L_PROMPT_SPK; continue;}
+						{
+							next_label=L_PROMPT_SPK; continue;
+						}
 						default:
 							bug(24);
 
@@ -763,7 +806,6 @@ public class Adv32 extends Wizard
 				case 9060:
 					switch(tropen())
 					{   case L_PROMPT_SPK: {next_label=L_PROMPT_SPK; continue;}
-						case L_DO_MAGIC: {next_label= L_DO_MAGIC; continue;}
 						default: bug(106);
 					}
 				case 9050:	//  nothing
@@ -774,7 +816,7 @@ public class Adv32 extends Wizard
 					if (gameData.limit <0) {next_label=L_PROMPT_SPK; continue;}
 					gameData.prop[lamp]=1;
 					rspeak(39);
-					if (gameData.wzdark) {next_label=2000; continue;}
+					if (gameData.wzdark) {next_label=L_PROCESS_LOCATION; continue;}
 				{next_label=L_NEXT_MOVE; continue;}
 
 				case 9080:	//  off
@@ -857,25 +899,29 @@ public class Adv32 extends Wizard
 				}
 				case L_TRY_KILL_RESPONSE: {
 					parseUserInputLine(crankInput.userInput);
-
-					if (!weq(wd1,"y")&&!weq(wd1,"yes")) {next_label=L_PROCESS_USER_INPUT; continue;}
+					if (!weq(wd1,"y")&&!weq(wd1,"yes")) {
+						next_label=L_PROCESS_USER_INPUT; continue;
+					}
 					pspeak(dragon,1);
 					gameData.prop[dragon]=2;
 					gameData.prop[rug]=0;
-					gameData.k = (plac[dragon] + fixd[dragon]) / 2;
+					int nextLoc = (plac[dragon] + fixd[dragon]) / 2;
 					move(dragon+FIXED_OBJECT_OFFSET,-1);
 					move(rug+FIXED_OBJECT_OFFSET,0);
-					move(dragon, gameData.k);
-					move(rug, gameData.k);
+					move(dragon, nextLoc);
+					move(rug, nextLoc);
 					for (gameData.obj = 1; gameData.obj <=LAST_OBJECT_INDEX; gameData.obj++)
 						if (gameData.place[gameData.obj]==plac[dragon]|| gameData.place[gameData.obj]==fixd[dragon])
-							move(gameData.obj, gameData.k);
-					gameData.loc = gameData.k;
-					gameData.k = 0;
-					{next_label=8; continue;}
+							move(gameData.obj, nextLoc);
+					gameData.loc = nextLoc;
+					gameData.dest = 0;
+					{
+						next_label=L_TO_DESTINATION; continue;
+					}
 				}
 
 				case 9130:	//  pour
+				{
 					if (gameData.obj ==bottle|| gameData.obj ==0) gameData.obj = liq(0);
 					if (gameData.obj ==0) {next_label=L_ASK_WHAT_OBJ; continue;}
 					if (!toting(gameData.obj)) {next_label=L_PROMPT_SPK; continue;}
@@ -897,8 +943,9 @@ public class Adv32 extends Wizard
 					pspeak(plant, gameData.prop[plant]+1);
 					gameData.prop[plant]=(gameData.prop[plant]+2)% 6;
 					gameData.prop[plant2]= gameData.prop[plant]/2;
-					gameData.k = 0;
-				{next_label=8; continue;}
+					gameData.dest = 0;
+					next_label=L_TO_DESTINATION; continue;
+				}
 				case 9140:	//9140 - eat
 					if (gameData.obj ==food) {next_label=8142; continue;}
 					if (gameData.obj ==bird|| gameData.obj ==snake|| gameData.obj ==clam|| gameData.obj ==oyster
@@ -924,14 +971,14 @@ public class Adv32 extends Wizard
 						case L_PROMPT_SPK: {next_label=L_PROMPT_SPK; continue;}
 						case 9020: {next_label=9020; continue;}
 						case L_TRY_KILL: {next_label=L_TRY_KILL; continue;}
-						case 8: {next_label=8; continue;}
+						case L_TO_DESTINATION: {next_label=L_TO_DESTINATION; continue;}
 						case 9210: {next_label=9210; continue;}
 						default: bug(113);
 					}
 				case 9190:	//  9190: find
 				case 9200:	// , invent
 					if (at(gameData.obj)||(liq(0)== gameData.obj &&at(bottle))
-						|| gameData.k ==liqloc(gameData.loc)) gameData.spk = 94;
+						|| gameData.obj ==liqloc(gameData.loc)) gameData.spk = 94;
 					for (int temp_i=1; temp_i<=5; temp_i++) {
 						if (gameData.dwarfLoc[temp_i]== gameData.loc && gameData.dflag >=2&& gameData.obj ==dwarf) gameData.spk = 94;
 					}
@@ -970,7 +1017,9 @@ public class Adv32 extends Wizard
 				case 9271:	//  read
 					gameData.hinted[2]=queryState.saidYes();
 					{next_label=L_NEXT_MOVE; continue;}
+
 				case 9280:	//  break
+				{
 					if (gameData.obj ==mirror) gameData.spk = 148;
 					if (gameData.obj ==vase&& gameData.prop[vase]==0)
 					{
@@ -980,38 +1029,60 @@ public class Adv32 extends Wizard
 						gameData.fixed[vase]= -1;
 						{next_label=L_PROMPT_SPK; continue;}
 					}
-					if (gameData.obj !=mirror||!isClosed) {next_label=L_PROMPT_SPK; continue;}
+					if (gameData.obj !=mirror||!isClosed) {
+						next_label=L_PROMPT_SPK; continue;
+					}
 					rspeak(197);
-					{next_label=done(3); continue;}
+					next_label=done(3); continue;
+				}
 
 				case 9290:	//  wake
-					if (gameData.obj !=dwarf||!isClosed) {next_label=L_PROMPT_SPK; continue;}
+				{
+					if (gameData.obj !=dwarf||!isClosed) {
+						next_label=L_PROMPT_SPK; continue;
+					}
 					rspeak(199);
-					{next_label=done(3); continue;}
+					next_label=done(3); continue;
+				}
 
 				// END FLATTEND SWITCH }
 
 				case L_TO_OBJECT:
-					gameData.obj = gameData.k;
-					if (gameData.fixed[gameData.k]!= gameData.loc && !here(gameData.k))
+					if (gameData.fixed[gameData.obj]!= gameData.loc && !here(gameData.obj))
 					{
 						{next_label=5100; continue;}
 					}
 				case 5010:
-					if (wd2!=null) {next_label=2800; continue;}
-					if (gameData.verb !=0) {next_label=4090; continue;}
+				{
+					if (wd2!=null) {
+						next_label=2800; continue;
+					}
+					if (gameData.verb !=0) {next_label=L_HANDLE_VERB; continue;}
 					printf("What do you want to do with the {0}?",wd1);
-				{next_label=L_USER_INPUT; continue;}
+
+					next_label=L_USER_INPUT; continue;
+				}
 				case 5100:
-					if (gameData.k !=grate) {next_label=5110; continue;}
-					if (gameData.loc ==1|| gameData.loc ==4|| gameData.loc ==7) gameData.k = dprssn;
-					if (gameData.loc >9&& gameData.loc <15) gameData.k = entrnc;
-					if (gameData.k !=grate) {next_label=8; continue;}
+					if (gameData.obj !=grate)
+					{
+						next_label=5110; continue;
+					}
+					if (gameData.loc ==1|| gameData.loc ==4|| gameData.loc ==7) {
+						gameData.obj = dprssn;
+					}
+					if (gameData.loc >9&& gameData.loc <15) {
+						gameData.obj = entrnc;
+					}
+					if (gameData.obj !=grate) {
+						gameData.dest = gameData.obj;
+						next_label=L_TO_DESTINATION; continue;
+					}
 				case 5110:
-					if (gameData.k !=dwarf)
+					if (gameData.obj !=dwarf)
 					{
 						{next_label=5120; continue;}
 					}
+					// TODO:  Check this loop against 'C' --  it seems it may be mis-ported
 					for (int temp_i=1; temp_i<=5; temp_i++)
 					{
 						if (gameData.dwarfLoc[temp_i]== gameData.loc && gameData.dflag >=2)
@@ -1020,23 +1091,42 @@ public class Adv32 extends Wizard
 						}
 					}
 				case 5120:
-					if ((liq(0)== gameData.k &&here(bottle))|| gameData.k ==liqloc(gameData.loc)) {next_label=5010; continue;}
-					if (gameData.obj !=plant||!at(plant2)|| gameData.prop[plant2]==0) {next_label=5130; continue;}
+				{
+					if ((liq(0)== gameData.obj && here(bottle))
+						|| gameData.obj == liqloc(gameData.loc)) {
+						next_label=5010; continue;
+					}
+					if (gameData.obj !=plant||!at(plant2)|| gameData.prop[plant2]==0){
+						next_label=5130; continue;
+					}
 					gameData.obj = plant2;
-				{next_label=5010; continue;}
+					next_label=5010; continue;
+				}
 				case 5130:
-					if (gameData.obj !=knife|| gameData.knfloc != gameData.loc) {next_label=5140; continue;}
+				{
+					if (gameData.obj !=knife
+						|| gameData.knfloc != gameData.loc) {
+						next_label=5140; continue;
+					}
 					gameData.knfloc = -1;
 					gameData.spk = 116;
-				{next_label=L_PROMPT_SPK; continue;}
+					next_label=L_PROMPT_SPK; continue;
+				}
 				case 5140:
+				{
 					if (gameData.obj !=rod||!here(rod2)) {next_label=5190; continue;}
 					gameData.obj = rod2;
-				{next_label=5010; continue;}
+					next_label=5010; continue;
+				}
 				case 5190:
-					if ((gameData.verb ==find|| gameData.verb ==invent)&&wd2==null) {next_label=5010; continue;}
+				{
+					if ((gameData.verb ==find
+						|| gameData.verb ==invent)&&wd2==null) {
+						next_label=5010; continue;
+					}
 					printf("I see no {0} here",wd1);
-				{next_label=L_NEXT_MOVE; continue;}
+					next_label=L_NEXT_MOVE; continue;
+				}
 			}
 		}
     }
@@ -1117,15 +1207,15 @@ public class Adv32 extends Wizard
 		}
 		gameData.loc = gameData.newloc;			//  74
 		if (gameData.loc ==0 || forced(gameData.loc) || bitset(gameData.newloc,3))
-			return(2000);
+			return(L_PROCESS_LOCATION);
 		if (gameData.dflag ==0)
 		{	
 			if (gameData.loc >=15) gameData.dflag = 1;
-			return(2000);
+			return(L_PROCESS_LOCATION);
 		}
 		if (gameData.dflag ==1)		//  6000
 		{	
-			if (gameData.loc <15||pct(95)) return(2000);
+			if (gameData.loc <15||pct(95)) return(L_PROCESS_LOCATION);
 			gameData.dflag = 2;
 			for (int i=1; i<=2; i++)
 			{	
@@ -1139,9 +1229,10 @@ public class Adv32 extends Wizard
 			}
 			rspeak(3);
 			drop(axe, gameData.loc);
-			return(2000);
+			return(L_PROCESS_LOCATION);
 		}
-		gameData.dtotal = gameData.attack = gameData.stick = 0;			//  6010
+		gameData.dtotal = gameData.attack = 0;
+		int hitCount = 0;			//  6010
 		for (int dwarfid=1; dwarfid<=6; dwarfid++)                    /* loop to 6030 */
 		{
 			if (gameData.dwarfLoc[dwarfid]==0) continue;
@@ -1176,31 +1267,40 @@ public class Adv32 extends Wizard
 			if (dwarfid==6)                       /* pirate's spotted him */
 			{
 				int next_label = 0;
+				boolean dwarfIsHere = false;
 				while(true) 
 				{
 					switch(next_label)
 					{
 					case 0:
 						if (gameData.loc == gameData.chloc || gameData.prop[chest]>=0) break;
-						gameData.k = 0;
 						for (newdwarfid=FIRST_TREASURE_INDEX; newdwarfid<=LAST_TREASURE_INDEX; newdwarfid++)      /* loop to 6020 */
 						{       
-							if (newdwarfid==pyram&&(gameData.loc ==plac[pyram]
-								 || gameData.loc ==plac[emrald])) // goto l6020;
+							if (newdwarfid==pyram
+								&& (gameData.loc ==plac[pyram] || gameData.loc ==plac[emrald]))
 							{
+								// goto l6020;
 							}
 							else
 							{
 								if (toting(newdwarfid)) {next_label = 2; break;};
 							}
 						//l6020:  
-							if (here(newdwarfid)) gameData.k = 1;
+							if (here(newdwarfid)) {
+								dwarfIsHere = true;
+							}
 							next_label = 1;
 						}                              /* 6020 */
 						continue;
 					case 1: // l6021:  
-						if (gameData.tally == gameData.tally2 +1 && gameData.k ==0 && gameData.place[chest]==0
-							&&here(lamp) && gameData.prop[lamp]==1) {next_label = 5; continue;};
+						if (gameData.tally == gameData.tally2 + 1
+							&& ! dwarfIsHere
+							&& gameData.place[chest]==0
+							&& here(lamp)
+							&& gameData.prop[lamp]==1) {
+							next_label = 5;
+							continue;
+						};
 						if (gameData.odloc[6]!= gameData.dwarfLoc[6]&&pct(20))
 							rspeak(127);
 						break;       /* to 6030 */
@@ -1234,9 +1334,11 @@ public class Adv32 extends Wizard
 			if (gameData.odloc[dwarfid]!= gameData.dwarfLoc[dwarfid]) continue;
 			gameData.attack++;
 			if (gameData.knfloc >=0) gameData.knfloc = gameData.loc;
-			if (ran(1000)<95*(gameData.dflag -2)) gameData.stick++;
+			if (ran(1000)<95*(gameData.dflag -2)) hitCount++;
 		}                                       /* 6030 */
-		if (gameData.dtotal ==0) return(2000);
+		if (gameData.dtotal ==0) {
+			return(L_PROCESS_LOCATION);
+		}
 		if (gameData.dtotal !=1)
 		{       
 			printf(
@@ -1247,34 +1349,36 @@ public class Adv32 extends Wizard
 		}
 		else
 			rspeak(4);
-		if (gameData.attack ==0) return(2000);
+		if (gameData.attack ==0) {
+			return(L_PROCESS_LOCATION);
+		}
 		if (gameData.dflag ==2) gameData.dflag = 3;
 		if (saved!= -1) gameData.dflag = 20;
+		int battleMessage = 0;
 		if (gameData.attack !=1)
 		{       
 			printf("{0} of them throw knives at you!", gameData.attack);
-			gameData.k = 6;
+			battleMessage = 6;
 		}
 		else
 		{
-			rspeak(5);
-			gameData.k = 52;
+			rspeak(5);	// a knife is thrown
+			battleMessage = 52;
 		}
-		if (gameData.stick <=1)                   //  82
+		if (hitCount <=1)                   //  82
 		{       
-			rspeak(gameData.k + gameData.stick);
-			if (gameData.stick ==0) return(2000);
+			rspeak(battleMessage + hitCount);
+			if (hitCount ==0) return(L_PROCESS_LOCATION);
 		}
 		else
-			printf("{0} of them get you!", gameData.stick);  //  83
+			printf("{0} of them get you!", hitCount);  //  83
 		gameData.oldlc2 = gameData.loc;
 		return(99);
 	}
 	// ---------------------------------------------------------------------
 	//  label 8
-	int march()
+	int march(int destWord)
 	{
-		int destWord = gameData.k;
 		NavConfig navConfig = navConfigs.get(gameData.newloc = gameData.loc);
 		NavConfigEntry nce = navConfig.first;
 
@@ -1295,7 +1399,7 @@ public class Adv32 extends Wizard
 			abb[gameData.loc]=0;
 			return(L_AFTER_NAV);
 		}
-		if (destWord ==back)                            //  20
+		if (destWord == back)                            //  20
 		{
 			nce = mback(nce);
 			if(nce == null) {
@@ -1473,7 +1577,7 @@ public class Adv32 extends Wizard
 			}
 			if (tloc<=300)
 			{
-				if (forced(tloc) && cameFromLoc ==firstEntry.destLoc) {
+				if (forced(tloc) && cameFromLoc == firstEntry.destLoc) {
 					tk2=nce;
 				}
 			}
@@ -1679,8 +1783,8 @@ public class Adv32 extends Wizard
 		if ((gameData.obj ==bird|| gameData.obj ==cage)&& gameData.prop[bird]!=0)
 			carry(bird+cage- gameData.obj, gameData.loc);
 		carry(gameData.obj, gameData.loc);
-		gameData.k = liq(0);
-		if (gameData.obj ==bottle && gameData.k !=0) gameData.place[gameData.k] = -1;
+		int liqId = liq(0);
+		if (gameData.obj ==bottle && liqId !=0) gameData.place[liqId] = -1;
 		return(L_PROMPT_OK);
 	}
 	// ---------------------------------------------------------------------
@@ -1762,15 +1866,15 @@ public class Adv32 extends Wizard
 		return(dropper());
 	}
 	// ---------------------------------------------------------------------
-	int tropen()                                        //  9040                 
+	private int tropen()                                        //  9040
 	{       
 		if (gameData.obj ==clam|| gameData.obj ==oyster)
 		{
-			gameData.k = 0;                            //  9046
-			if (gameData.obj ==oyster) gameData.k = 1;
-			gameData.spk = 124 + gameData.k;
-			if (toting(gameData.obj)) gameData.spk = 120 + gameData.k;
-			if (!toting(tridnt)) gameData.spk = 122 + gameData.k;
+			int sequence = 0;                            //  9046
+			if (gameData.obj ==oyster) sequence = 1;
+			gameData.spk = 124 + sequence;
+			if (toting(gameData.obj)) gameData.spk = 120 + sequence;
+			if (!toting(tridnt)) gameData.spk = 122 + sequence;
 			if (gameData.verb ==lock) gameData.spk = 61;
 			if (gameData.spk !=124) return(L_PROMPT_SPK);
 			dstroy(clam);
@@ -1809,16 +1913,16 @@ public class Adv32 extends Wizard
 		}
 		if (isClosing)
 		{
-			gameData.k = 130;
+			gameData.spk = 130;
 			if (!gameData.panic) gameData.clock2 = 15;
 			gameData.panic = true;
-			return(L_DO_MAGIC);
+			return(L_PROMPT_SPK);
 		}
-		gameData.k = 34 + gameData.prop[grate];                       //  9043
+		gameData.spk = 34 + gameData.prop[grate];                       //  9043
 		gameData.prop[grate]=1;
 		if (gameData.verb ==lock) gameData.prop[grate]=0;
-		gameData.k = gameData.k + 2 * gameData.prop[grate];
-		return(L_DO_MAGIC);
+		gameData.spk = gameData.spk + 2 * gameData.prop[grate];
+		return(L_PROMPT_SPK);
 	}
 //	// ---------------------------------------------------------------------
 //	int trkill()                                //  L_TRY_KILL
@@ -1888,8 +1992,8 @@ public class Adv32 extends Wizard
 		// l9175:  
 		rspeak(spk);
 		drop(axe,loc);
-		gameData.k = 0;
-		return(8);
+		gameData.dest = 0;
+		return(L_TO_DESTINATION);
 	}
 
 	// ---------------------------------------------------------------------
@@ -2015,9 +2119,9 @@ public class Adv32 extends Wizard
 		if (liq(0)!=0) gameData.spk = 105;
 		if (gameData.spk !=107) return(L_PROMPT_SPK);
 		gameData.prop[bottle]=((cond[gameData.loc]%4)/2)*2;
-		gameData.k = liq(0);
-		if (toting(bottle)) gameData.place[gameData.k]= -1;
-		if (gameData.k ==oil) gameData.spk = 108;
+		int liquidId = liq(0);
+		if (toting(bottle)) gameData.place[liquidId]= -1;
+		if (liquidId ==oil) gameData.spk = 108;
 		return(L_PROMPT_SPK);
 	}
 
@@ -2087,12 +2191,12 @@ public class Adv32 extends Wizard
 		for (i=FIRST_TREASURE_INDEX; i<=LAST_TREASURE_INDEX; i++)
 		{	
 			if (! hasPText(i) ) continue;
-			gameData.k = 12;
-			if (i==chest) gameData.k = 14;
-			if (i>chest) gameData.k = 16;
+			int tscore = 12;
+			if (i==chest) tscore = 14;
+			if (i>chest) tscore = 16;
 			if (gameData.prop[i]>=0) scor += 2;
-			if (gameData.place[i]==3&& gameData.prop[i]==0) scor += gameData.k -2;
-			gameData.mxscor = gameData.mxscor + gameData.k;
+			if (gameData.place[i]==3&& gameData.prop[i]==0) scor += tscore -2;
+			gameData.mxscor = gameData.mxscor + tscore;
 		}
 		scor += (gameData.maxdie - gameData.numdie)*10;
 		gameData.mxscor = gameData.mxscor + gameData.maxdie * 10;
