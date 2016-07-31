@@ -39,13 +39,21 @@
  */
 package adv32;
 
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+
+import java.io.*;
 import java.util.ArrayList;
 import java.util.List;
+
+import static adv32.Adv32.CrankOutput.Type.getInput;
+import static adv32.Adv32.CrankOutput.Type.save;
 
 public class Adv32 extends Wizard
 {
 
 	private boolean isVerbose = false;
+	Gson gson = new GsonBuilder().setPrettyPrinting().create();
 
     public static void main( String args[] )
     {
@@ -89,7 +97,10 @@ public class Adv32 extends Wizard
 
 
 	private void processCommandLine(String[] args) {
-		String path = null;
+		boolean ok = true;
+		GameData savedGameData = null;
+		File gameDataFile = new File("adv.savedata");
+
 		for(String arg : args) {
 			if("-v".equals(arg)) {
 				isVerbose = true;
@@ -103,10 +114,40 @@ public class Adv32 extends Wizard
 				db_dump_travel = true;
 				continue;
 			}
-			path = arg;
+			if("-r".equals(arg)) {
+				if(gameDataFile.canRead()) {
+					try {
+						FileReader reader = new FileReader(gameDataFile);
+						savedGameData = gson.fromJson(reader, GameData.class);
+					} catch (FileNotFoundException e) {
+						System.out.println("Unable to Load: " + e.getMessage());
+						gameDataFile.delete();
+					}
+				}
+				continue;
+			}
+			System.out.println("Unexpected Commandline Argument: " + arg);
+			ok = false;
+		}
+		if(! ok ) {
+			System.exit(2);
 		}
 		try {
-			this.doGame(path);
+			// Run the game until exit
+			String saveData = this.doGame(savedGameData);
+			// Either save or delete previously saved
+			if(saveData == null) {
+				if(gameDataFile.exists()) {
+					System.out.println("Delete old saved data here!");
+//					gameDataFile.delete();
+				}
+			} else {
+				FileWriter fw = new FileWriter(gameDataFile);
+				fw.write(saveData);
+				fw.close();
+			}
+		} catch(IOException e) {
+			System.out.println(e.getMessage());
 		} catch(EmergencyExit e) {
 			if(e.isError()) {
 				System.out.println(e.getMessage());
@@ -132,6 +173,7 @@ public class Adv32 extends Wizard
 
 		enum Type {
 			getInput,
+			save,
 			exit
 		}
 		List<String> lines;
@@ -210,18 +252,27 @@ public class Adv32 extends Wizard
 		}
 	}
 
-	private void doGame( String path ) {
+	public String serializeGameData() {
+		return gson.toJson(gameData);
+	}
 
-		CrankOutput output = startGame();
+	private String doGame( GameData savedData ) {
 
+
+		CrankOutput output = startGame(savedData);
 		while(true) {
-			for(String line : output.getLines()) {
-				System.out.println(line);
-			}
 			switch(output.type) {
-				case exit: return;
+				case save: {
+					displayGameOutput(output);
+					return serializeGameData();
+				}
+				case exit: {
+					displayGameOutput(output);
+					return null;
+				}
 				case getInput:
 				{
+					displayGameOutput(output);
 					String line = AdvIO.getInputLine();
 					output = nextMove(line);
 				}
@@ -229,7 +280,14 @@ public class Adv32 extends Wizard
 		}
 	}
 
-	public CrankOutput startGame() {
+	private void displayGameOutput(CrankOutput output) {
+		for(String line : output.getLines()) {
+			System.out.println(line);
+		}
+	}
+
+	public CrankOutput startGame(GameData savedData) {
+		this.gameData = savedData == null ? new GameData() : savedData;
 		init();
 		return nextMove(L_PREAMBLE, null);
 	}
@@ -311,7 +369,7 @@ public class Adv32 extends Wizard
 
 				case L_AFTER_NAV:
 				{
-					if (gameData.newloc <9 && gameData.newloc !=0 && isClosing)
+					if (gameData.newloc <9 && gameData.newloc !=0 && gameData.isClosing)
 					{
 						rspeak(130);    //  if closing leave only by main office
 						gameData.newloc = gameData.loc;
@@ -330,7 +388,7 @@ public class Adv32 extends Wizard
 					}
 //TODO:: Fix This
 					temp_mlist = getSText(gameData.loc);
-					if ((abb[gameData.loc]% gameData.abbnum)==0 || temp_mlist == null)
+					if ((gameData.abb[gameData.loc]% gameData.abbnum)==0 || temp_mlist == null)
 						temp_mlist = getLText(gameData.loc);
 					if (!forced(gameData.loc) && dark(0))
 					{
@@ -346,13 +404,13 @@ public class Adv32 extends Wizard
 					if (forced(gameData.loc)) {
 						next_label=L_TO_DESTINATION; continue;
 					}
-					if (gameData.loc ==33 && pct(25)&&!isClosing) rspeak(8);
+					if (gameData.loc ==33 && pct(25)&&!gameData.isClosing) rspeak(8);
 					// FLATTEN
 					//if (!dark(0))
 					// {
 					if (dark(0)) {next_label=L_NEXT_MOVE; continue;}
-					abb[gameData.loc]++;
-					for (int temp_i = atloc[gameData.loc]; temp_i!=0; temp_i= gameData.link[temp_i])     // 2004
+					gameData.abb[gameData.loc]++;
+					for (int temp_i = gameData.atloc[gameData.loc]; temp_i!=0; temp_i= gameData.link[temp_i])     // 2004
 					{
 						gameData.obj = temp_i;
 						if (gameData.obj >FIXED_OBJECT_OFFSET)
@@ -361,7 +419,7 @@ public class Adv32 extends Wizard
 							continue;
 						if (gameData.prop[gameData.obj]<0)
 						{
-							if (isClosed)
+							if (gameData.isClosed)
 								continue;
 							gameData.prop[gameData.obj]=0;
 							if (gameData.obj ==rug|| gameData.obj ==chain)
@@ -398,7 +456,7 @@ public class Adv32 extends Wizard
 				{
 
 					checkhints();                   //  to 2600-2602
-					if (isClosed)
+					if (gameData.isClosed)
 					{
 						if (gameData.prop[oyster]<0 && toting(oyster))
 							pspeak(oyster,1);
@@ -410,7 +468,7 @@ public class Adv32 extends Wizard
 					}
 					gameData.wzdark = dark(0);                 //  2605
 					if (gameData.knfloc >0 && gameData.knfloc != gameData.loc) gameData.knfloc = 1;
-					return new CrankOutput(CrankOutput.Type.getInput, L_PARSE_USER_INPUT);
+					return new CrankOutput(getInput, L_PARSE_USER_INPUT);
 //				DP("GETIN @loc({0})", loc);
 //				getin();
 				}
@@ -597,14 +655,18 @@ public class Adv32 extends Wizard
 				case 4080:
 					switch(gameData.verb)
 					{   case 1:  {                   //  take = 8010
-							if (atloc[gameData.loc]==0 || gameData.link[atloc[gameData.loc]] != 0)
-							{next_label=L_ASK_WHAT_OBJ; continue;}
+							if (gameData.atloc[gameData.loc]==0
+								|| gameData.link[gameData.atloc[gameData.loc]] != 0)
+							{
+								next_label=L_ASK_WHAT_OBJ; continue;
+							}
 							for (int temp_i=1; temp_i<=5; temp_i++)
 							{
-								if (gameData.dwarfLoc[temp_i]== gameData.loc && gameData.dflag >=2)
+								if (gameData.dwarfLoc[temp_i]== gameData.loc
+									&& gameData.dflag >=2)
 								{next_label=L_ASK_WHAT_OBJ; continue;}
 							}
-							gameData.obj = atloc[gameData.loc];
+							gameData.obj = gameData.atloc[gameData.loc];
 							next_label=9010; continue;
 						}
 						case 2: case 3: case 9:     //  L_ASK_WHAT_OBJ : drop,say,wave
@@ -651,14 +713,14 @@ public class Adv32 extends Wizard
 						case 22: {next_label=9220; continue;}        //  fill
 						case 23: {next_label=9230; continue;}        //  blast
 						case 24:                    //  score: 8240
-							isScoring =true;
+							gameData.isScoring =true;
 							printf(
 								"If you were to quit now, you would score {0} out"
 									+" of a possible {1}",
 								score(),
 								gameData.mxscor
 							);
-							isScoring =false;
+							gameData.isScoring =false;
 							{next_label=initiateYes(143,54,54, L_CHECK_FOR_REALLY_QUIT); continue;}
 						case 25: {                //  foo: 8250
 							int mword = vocab(wd1, Usage.MAGIC);
@@ -681,7 +743,7 @@ public class Adv32 extends Wizard
 							if (here(magzin)) gameData.obj = magzin;
 							if (here(tablet)) gameData.obj = gameData.obj * 100 + tablet;
 							if (here(messag)) gameData.obj = gameData.obj * 100 + messag;
-							if (isClosed &&toting(oyster)) gameData.obj = oyster;
+							if (gameData.isClosed &&toting(oyster)) gameData.obj = oyster;
 							if (gameData.obj >FIXED_OBJECT_OFFSET || gameData.obj ==0 || dark(0) )
 							{
 								{next_label=L_ASK_WHAT_OBJ; continue;}
@@ -702,7 +764,7 @@ public class Adv32 extends Wizard
 							{next_label=initiateYes(200,54,54, L_CHECK_FOR_ACCEPTABLE); continue;}
 						case 31:                    //  hours=8310
 							printf(
-								"Colossal cave is isClosed 9am-5pm Mon through "
+								"Colossal cave is gameData.isClosed 9am-5pm Mon through "
 									+"Fri except holidays."
 							);
 						{next_label=L_NEXT_MOVE; continue;}
@@ -721,7 +783,8 @@ public class Adv32 extends Wizard
 					gameData.saved_last_usage = datime();
 					// TODO: What do we do here????
 //						ciao(path);	          //  Do we quit?
-					{next_label= L_AFTER_NAV; continue;} //  Maybe not
+					return new CrankOutput(save, L_AFTER_NAV);
+
 				case L_ASK_WHAT_OBJ:
 					printf("{0} what?",wd1);
 					gameData.obj = 0;
@@ -838,7 +901,7 @@ public class Adv32 extends Wizard
 				{
 					if ((!toting(gameData.obj))&&(gameData.obj !=rod||!toting(rod2)))
 						gameData.spk = 29;
-					if (gameData.obj !=rod||!at(fissur)||!toting(gameData.obj)|| isClosing)
+					if (gameData.obj !=rod||!at(fissur)||!toting(gameData.obj)|| gameData.isClosing)
 					{next_label=L_PROMPT_SPK; continue;}
 					gameData.prop[fissur]=1- gameData.prop[fissur];
 					pspeak(fissur,2- gameData.prop[fissur]);
@@ -874,7 +937,7 @@ public class Adv32 extends Wizard
 					if (gameData.obj == bird)                  //  9124
 					{
 						gameData.spk = 137;
-						if (isClosed) {
+						if (gameData.isClosed) {
 							next_label = L_PROMPT_SPK;
 							continue;
 						}
@@ -887,7 +950,7 @@ public class Adv32 extends Wizard
 					if (gameData.obj == clam || gameData.obj == oyster) gameData.spk = 150;
 					if (gameData.obj == snake) gameData.spk = 46;
 					if (gameData.obj == dwarf) gameData.spk = 49;
-					if (gameData.obj == dwarf && isClosed) {
+					if (gameData.obj == dwarf && gameData.isClosed) {
 						next_label = 19000;
 						continue;
 					}
@@ -903,7 +966,7 @@ public class Adv32 extends Wizard
 					gameData.obj = 0;
 //				DP("GETIN @loc({0})", loc);
 //				getin();
-					return new CrankOutput(CrankOutput.Type.getInput, L_TRY_KILL_RESPONSE);
+					return new CrankOutput(getInput, L_TRY_KILL_RESPONSE);
 				}
 				case L_TRY_KILL_RESPONSE: {
 					parseUserInputLine(crankInput.userInput);
@@ -919,7 +982,8 @@ public class Adv32 extends Wizard
 					move(dragon, nextLoc);
 					move(rug, nextLoc);
 					for (gameData.obj = 1; gameData.obj <=LAST_OBJECT_INDEX; gameData.obj++)
-						if (gameData.place[gameData.obj]==plac[dragon]|| gameData.place[gameData.obj]==fixd[dragon])
+						if (gameData.place[gameData.obj]==plac[dragon]
+							|| gameData.place[gameData.obj]==fixd[dragon])
 							move(gameData.obj, nextLoc);
 					gameData.loc = nextLoc;
 					gameData.dest = 0;
@@ -990,7 +1054,7 @@ public class Adv32 extends Wizard
 					for (int temp_i=1; temp_i<=5; temp_i++) {
 						if (gameData.dwarfLoc[temp_i]== gameData.loc && gameData.dflag >=2&& gameData.obj ==dwarf) gameData.spk = 94;
 					}
-					if (isClosed) gameData.spk = 138;
+					if (gameData.isClosed) gameData.spk = 138;
 					if (toting(gameData.obj)) gameData.spk = 24;
 				{next_label=L_PROMPT_SPK; continue;}
 				case 9210:	//  feed
@@ -1006,7 +1070,7 @@ public class Adv32 extends Wizard
 						default: bug(115);
 					}
 				case 9230:	//  blast
-					if (gameData.prop[rod2]<0||!isClosed) {next_label=L_PROMPT_SPK; continue;}
+					if (gameData.prop[rod2]<0||!gameData.isClosed) {next_label=L_PROMPT_SPK; continue;}
 					gameData.bonus = 133;
 					if (gameData.loc ==115) gameData.bonus = 134;
 					if (here(rod2)) gameData.bonus = 135;
@@ -1020,7 +1084,7 @@ public class Adv32 extends Wizard
 					if (gameData.obj ==messag) gameData.spk = 191;
 					if (gameData.obj ==oyster&& gameData.hinted[2]&&toting(oyster)) gameData.spk = 194;
 					if (gameData.obj !=oyster|| gameData.hinted[2]||!toting(oyster)
-						||!isClosed) {next_label=L_PROMPT_SPK; continue;}
+						||!gameData.isClosed) {next_label=L_PROMPT_SPK; continue;}
 					{next_label=initiateYes(192,193,54, 9271); continue;}
 				case 9271:	//  read
 					gameData.hinted[2]=queryState.saidYes();
@@ -1037,7 +1101,7 @@ public class Adv32 extends Wizard
 						gameData.fixed[vase]= -1;
 						{next_label=L_PROMPT_SPK; continue;}
 					}
-					if (gameData.obj !=mirror||!isClosed) {
+					if (gameData.obj !=mirror||!gameData.isClosed) {
 						next_label=L_PROMPT_SPK; continue;
 					}
 					rspeak(197);
@@ -1046,7 +1110,7 @@ public class Adv32 extends Wizard
 
 				case 9290:	//  wake
 				{
-					if (gameData.obj !=dwarf||!isClosed) {
+					if (gameData.obj !=dwarf||!gameData.isClosed) {
 						next_label=L_PROMPT_SPK; continue;
 					}
 					rspeak(199);
@@ -1272,7 +1336,7 @@ public class Adv32 extends Wizard
 			gameData.dwarfSeenAtLoc[dwarfid]=(gameData.dwarfSeenAtLoc[dwarfid]&& gameData.loc >=15)||(gameData.dwarfLoc[dwarfid]== gameData.loc || gameData.odloc[dwarfid]== gameData.loc);
 			if (!gameData.dwarfSeenAtLoc[dwarfid]) continue;        /* i.e. goto 6030 */
 			gameData.dwarfLoc[dwarfid]= gameData.loc;
-			printf("Dwarf {0} moved to {1}", dwarfid, getPlaceDescription(gameData.loc) );
+//			printf("Dwarf {0} moved to {1}", dwarfid, getPlaceDescription(gameData.loc) );
 			if (dwarfid==6)                       /* pirate's spotted him */
 			{
 				int next_label = 0;
@@ -1405,7 +1469,7 @@ public class Adv32 extends Wizard
 		{       
 			if (gameData.detail++ <3) rspeak(15);
 			gameData.wzdark = false;
-			abb[gameData.loc]=0;
+			gameData.abb[gameData.loc]=0;
 			return(L_AFTER_NAV);
 		}
 		if (destWord == back)                            //  20
@@ -1505,7 +1569,7 @@ public class Adv32 extends Wizard
 			mspeak(state.question);     //  tell him what we want
 		}
 		// Exit and re-enter at L_YES_RESPONSE
-		return new CrankOutput(CrankOutput.Type.getInput, L_YES_RESPONSE);
+		return new CrankOutput(getInput, L_YES_RESPONSE);
 	}
 	// ---------------------------------------------------------------------
 	public int yesResponse(QueryState state, String input) {
@@ -1674,9 +1738,9 @@ public class Adv32 extends Wizard
 			if (gameData.hinted[hint])
 				continue;
 			if (!bitset(gameData.loc,hint))
-				hintlc[hint]= -1;
-			hintlc[hint]++;
-			if (hintlc[hint] < getHint(hint, 1) )
+				gameData.hintlc[hint]= -1;
+			gameData.hintlc[hint]++;
+			if (gameData.hintlc[hint] < getHint(hint, 1) )
 				continue;
 			boolean goto_140010 = true;
 			
@@ -1692,9 +1756,9 @@ public class Adv32 extends Wizard
 					if (here(snake)&&!here(bird)) break;
 					goto_140010 = false; break;
 				case 7:     //  40700 
-					if (atloc[gameData.loc]==0
-						&& atloc[gameData.oldloc]==0
-						&& atloc[gameData.oldlc2]==0
+					if (gameData.atloc[gameData.loc]==0
+						&& gameData.atloc[gameData.oldloc]==0
+						&& gameData.atloc[gameData.oldlc2]==0
 						&& gameData.holdng >1) break;
 					goto_140010 = false; break;
 				case 8:     //  40800 
@@ -1707,7 +1771,7 @@ public class Adv32 extends Wizard
 			if( goto_140010 )
 			{
 				// l40010: Goto Target
-				hintlc[hint]=0;
+				gameData.hintlc[hint]=0;
 				if (!yes( getHint(hint, 3), 0, 54)) continue;
 				printf(
 					"I am prepared to give you a hint, but it will "
@@ -1717,7 +1781,7 @@ public class Adv32 extends Wizard
 				gameData.hinted[hint]=yes(175, getHint(hint, 4),54);
 			}
 			// l40020: (falls through)
-			hintlc[hint]=0;
+			gameData.hintlc[hint]=0;
 		}
 	}
 	// ---------------------------------------------------------------------
@@ -1825,7 +1889,7 @@ public class Adv32 extends Wizard
 		if (gameData.obj ==bird&&here(snake))
 		{       
 			rspeak(30);
-			if (isClosed) return(19000);
+			if (gameData.isClosed) return(19000);
 			dstroy(snake);
 			gameData.prop[snake]=1;
 			return(dropper());
@@ -1917,7 +1981,7 @@ public class Adv32 extends Wizard
 			gameData.fixed[bear]=2- gameData.prop[bear];
 			return(L_PROMPT_SPK);
 		}
-		if (isClosing)
+		if (gameData.isClosing)
 		{
 			gameData.spk = 130;
 			if (!gameData.panic) gameData.clock2 = 15;
@@ -1954,7 +2018,7 @@ public class Adv32 extends Wizard
 //		if (obj==bird)                  //  9124
 //		{
 //			spk=137;
-//			if (isClosed) return(L_PROMPT_SPK);
+//			if (gameData.isClosed) return(L_PROMPT_SPK);
 //			dstroy(bird);
 //			prop[bird]=0;
 //			if (place[snake]==plac[snake]) tally2++;
@@ -1964,7 +2028,7 @@ public class Adv32 extends Wizard
 //		if (obj==clam||obj==oyster) spk=150;
 //		if (obj==snake) spk=46;
 //		if (obj==dwarf) spk=49;
-//		if (obj==dwarf&& isClosed) return(19000);
+//		if (obj==dwarf&& gameData.isClosed) return(19000);
 //		if (obj==dragon) spk=147;
 //		if (obj==troll) spk=157;
 //		if (obj==bear) spk=165+(prop[bear]+1)/2;
@@ -2075,7 +2139,7 @@ public class Adv32 extends Wizard
 			gameData.spk = 102;
 			if (gameData.obj ==dragon&& gameData.prop[dragon]!=0) gameData.spk = 110;
 			if (gameData.obj ==troll) gameData.spk = 182;
-			if (gameData.obj !=snake|| isClosed ||!here(bird)) return(L_PROMPT_SPK);
+			if (gameData.obj !=snake|| gameData.isClosed ||!here(bird)) return(L_PROMPT_SPK);
 			gameData.spk = 101;
 			dstroy(bird);
 			gameData.prop[bird]=0;
@@ -2154,7 +2218,7 @@ public class Adv32 extends Wizard
 		gameData.fixed[axe]=0;
 		rspeak(129);
 		gameData.clock1 = -1;
-		isClosing = true;
+		gameData.isClosing = true;
 		return(19999);
 	}
 
@@ -2185,7 +2249,7 @@ public class Adv32 extends Wizard
 		for (i=1; i<=FIXED_OBJECT_OFFSET; i++)
 			if (toting(i)) dstroy(i);
 		rspeak(132);
-		isClosed = true;
+		gameData.isClosed = true;
 		return(2);
 	}
 
@@ -2206,13 +2270,13 @@ public class Adv32 extends Wizard
 		}
 		scor += (gameData.maxdie - gameData.numdie)*10;
 		gameData.mxscor = gameData.mxscor + gameData.maxdie * 10;
-		if (!(isScoring || gameData.gaveup)) scor += 4;
+		if (!(gameData.isScoring || gameData.gaveup)) scor += 4;
 		gameData.mxscor = gameData.mxscor + 4;
 		if (gameData.dflag !=0) scor += 25;
 		gameData.mxscor = gameData.mxscor + 25;
-		if (isClosing) scor += 25;
+		if (gameData.isClosing) scor += 25;
 		gameData.mxscor = gameData.mxscor + 25;
-		if (isClosed)
+		if (gameData.isClosed)
 		{       if (gameData.bonus ==0) scor += 10;
 			if (gameData.bonus ==135) scor += 25;
 			if (gameData.bonus ==134) scor += 30;
@@ -2281,7 +2345,7 @@ public class Adv32 extends Wizard
 			rspeak(23);
 			gameData.oldlc2 = gameData.loc;
 		}
-		if (isClosing)                             //  99
+		if (gameData.isClosing)                             //  99
 		{
 			rspeak(131);
 			gameData.numdie++;
@@ -2341,12 +2405,14 @@ public class Adv32 extends Wizard
 			gameData.place[object] = -1;
 			gameData.holdng++;
 		}
-		if (atloc[where]==object)
+		if (gameData.atloc[where]==object)
 		{       
-			atloc[where]= gameData.link[object];
+			gameData.atloc[where]= gameData.link[object];
 			return;
 		}
-		for (temp=atloc[where]; gameData.link[temp]!=object; temp= gameData.link[temp]);
+		for (temp= gameData.atloc[where];
+			 gameData.link[temp]!=object;
+			 temp= gameData.link[temp]);
 		gameData.link[temp]= gameData.link[object];
 	}
 	
@@ -2362,8 +2428,8 @@ public class Adv32 extends Wizard
 		}
 		if (where<=0) 
 			return;
-		gameData.link[object]=atloc[where];
-		atloc[where]=object;
+		gameData.link[object]= gameData.atloc[where];
+		gameData.atloc[where]=object;
 	}
 	// ======================================================================
 	// End of Stuff from vocab.c
@@ -2525,7 +2591,9 @@ public class Adv32 extends Wizard
 		gameData.clock1 = 30;
 		gameData.clock2 = 50;
 		gameData.saved_last_usage = 0;
-		isClosing = gameData.panic = isClosed = isScoring = false;
+		gameData.isClosing = gameData.panic = gameData.isClosed = gameData.isScoring = false;
+
+//		genSource();
 	}
 	// ---------------------------------------------------------------------
 	private void parseUserInputLine(String line)
@@ -2594,5 +2662,27 @@ public class Adv32 extends Wizard
 	// Private Data
 	// ---------------------------------------------------------------------
     //
-	
+	// ---------------------------------------------------------------------
+	private void genSource() {
+		for(int id = 0; id < _objectname.length; id++) {
+			String name = _objectname[id];
+			if(name == null) {
+				continue;
+			}
+			StringBuilder sb = new StringBuilder();
+			sb.append(name)
+				.append(" = new Item(")
+				.append(id).append(", ")
+				.append('"').append(name).append('"').append(", ")
+				.append(plac[id]).append(", ")
+				.append(fixd[id]).append(", ")
+				.append(gameData.prop[id]);
+
+
+
+			sb.append(");");
+			System.out.println(sb.toString());
+		}
+	}
+
 }

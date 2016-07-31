@@ -528,11 +528,8 @@ public class DataFile extends AdvGameData
 	// ---------------------------------------------------------------------
 	void loadVocabulary(BufferedReader reader)
 	{
-		if( db_dump_travel )
-		{
-			_verbname = new String[LAST_VERB_ID+1];
-			_objectname = new String[LAST_OBJECT_INDEX+1];
-		}
+		_verbname = new String[LAST_VERB_ID+1];
+		_objectname = new String[LAST_OBJECT_INDEX+1];
 		List<VocabEntry> vocabIndex = new ArrayList<>(4000);
 		while( true )
 		{
@@ -555,18 +552,17 @@ public class DataFile extends AdvGameData
 			} else {
 				entry.addName(name);
 			}
-			if( db_dump_travel )
+			if(id <= LAST_VERB_ID )
 			{
-				if(id <= LAST_VERB_ID )
-				{
-					_verbname[id] = name;
-				}
-				else if( (id/1000) == 1 )
-				{
+				_verbname[id] = name;
+			}
+			else if( (id/1000) == 1 )
+			{
+				if(_objectname[id-1000] == null) {
 					_objectname[id-1000] = name;
 				}
 			}
-			
+
 			//DP("Vocab; {0}={1}", value.intValue(), name );
 
 		}
@@ -779,7 +775,7 @@ public class DataFile extends AdvGameData
 	
 	private final static int LAST_VERB_ID = 77;
 	private String _verbname[];
-	private String _objectname[];
+	protected String _objectname[];
 	
 	// various condition bits
 	public int cond[] = new int[LAST_LOCATION_INDEX+1];

@@ -44,19 +44,19 @@ import java.util.ArrayList;
 import java.util.BitSet;
 import java.util.List;
 
-public class AdvGameData extends AdvSaveData
+public class AdvGameData
 {
 	public final static int TURNS_IN_A_DEMO_GAME=50;// How short is a demo game?
+	public final static int LAST_LOCATION_INDEX = 140;
+	public final static int FIRST_TREASURE_INDEX = 50;
+	public final static int LAST_TREASURE_INDEX = 79;
+	public final static int LAST_OBJECT_INDEX = 100;
+	public final static int FIXED_OBJECT_OFFSET = LAST_OBJECT_INDEX;
+	public final static int MAX_VERBS = 35;
+	// ----------------------------------------------------
+	public final static int TOTING = -1;
+	public GameData gameData = new GameData();
 
-	// ---------------------------------------------------------------------
-	public static final class TravList
-	{
-		TravList next;	//  ptr to next list entry	   
-		int conditions;	//  m in writeup (newloc / 1000) 
-		int tloc;		//  n in writeup (newloc % 1000) 
-		int tverb;		//  the verb that takes you there
-		int index;		// Used for Save and Restore (java version only)
-	}
 	// ===========================================================================
 	public static final class NavConfigEntry
 	{
@@ -173,20 +173,13 @@ public class AdvGameData extends AdvSaveData
     //
 	public int saved;
 	
-	// various flags & counters
-	public boolean isClosing;
-	public boolean isClosed;
-	public boolean isScoring;
 	//
 	//
 	public QueryState queryState;
 	public int delhit;
 	public int hntmax;
-	public int hintlc[] = new int[20];
 	public String wd1 = null;
 	public String wd2 = null;
-	public int abb[] = new int[LAST_LOCATION_INDEX+1];
-	public int atloc[] = new int[LAST_LOCATION_INDEX+1];
 	// Initial Object Placement
 	public int plac[] = new int[LAST_OBJECT_INDEX+1];
 	public int fixd[] = new int[LAST_OBJECT_INDEX+1];

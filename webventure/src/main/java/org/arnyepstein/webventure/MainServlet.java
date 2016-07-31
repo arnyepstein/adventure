@@ -86,7 +86,7 @@ public class MainServlet extends HttpServlet {
 			if(game == null || "new".equals(body.command)) {
 				game = new Adv32();
 				session.setAttribute("adventureGame", game);
-				result = game.startGame();
+				result = game.startGame(null);
 			} else {
 				result = game.nextMove(body.message);
 			}
