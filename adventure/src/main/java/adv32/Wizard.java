@@ -62,6 +62,7 @@ public class Wizard extends AdvIO
 	// ---------------------------------------------------------------------
 	public boolean Start(int ignored)
 	{
+		initRandomNumbers();
 		int delay = datime() - this.gameData.saved_last_usage;
 		if (delay >= this.gameData.latncy)
 		{

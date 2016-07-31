@@ -257,9 +257,10 @@ public class Adv32 extends Wizard
 	}
 
 	private String doGame( GameData savedData ) {
-
-
-		CrankOutput output = startGame(savedData);
+		CrankOutput output =
+			savedData == null
+				? startGame()
+				: restoreGame(savedData);
 		while(true) {
 			switch(output.type) {
 				case save: {
@@ -286,12 +287,39 @@ public class Adv32 extends Wizard
 		}
 	}
 
-	public CrankOutput startGame(GameData savedData) {
-		this.gameData = savedData == null ? new GameData() : savedData;
-		init();
-		return nextMove(L_PREAMBLE, null);
+	// ---------------------------------------------------------------------
+	public CrankOutput startGame() {
+//		init();
+		loadDataFile();
+		completeLoad();
+		initializeGameData();
+		gameData.demo = Start(0);
+		return initialMove(L_PREAMBLE);
 	}
 
+	// ---------------------------------------------------------------------
+	public CrankOutput restoreGame(GameData savedData) {
+		this.gameData = savedData;
+//		init();
+		loadDataFile();
+		completeLoad();
+		Start(0);
+		gameData.dest = 0;
+		return initialMove(L_TO_DESTINATION);
+	}
+
+	// ---------------------------------------------------------------------
+	private CrankOutput initialMove(int label) {
+		if(db_dump_travel)
+		{
+			dump_travel();
+		}
+		//TODO WIZARD
+		poof();
+		return nextMove(label, null);
+
+	}
+	// ---------------------------------------------------------------------
 	public CrankOutput nextMove(String line) {
 		return nextMove(labelForNextMove, line);
 	}
@@ -351,9 +379,6 @@ public class Adv32 extends Wizard
 				}
 
 				case L_PREAMBLE:
-					initRandomNumbers();
-
-					gameData.demo = Start(0);
 					{next_label=initiateYes(65,1,0, L_PREAMBLE_1); continue;}
 
 				case L_PREAMBLE_1:
@@ -780,9 +805,8 @@ public class Adv32 extends Wizard
 					{next_label=L_NEXT_MOVE; continue;}
 				case L_CHECK_FOR_ACCEPTABLE:
 					if (!queryState.saidYes()) {next_label=L_NEXT_MOVE; continue;}
+					// We are quitting
 					gameData.saved_last_usage = datime();
-					// TODO: What do we do here????
-//						ciao(path);	          //  Do we quit?
 					return new CrankOutput(save, L_AFTER_NAV);
 
 				case L_ASK_WHAT_OBJ:
@@ -2331,6 +2355,7 @@ public class Adv32 extends Wizard
 					,diff
 					,(diff==1) ? "." : "s."
 				);
+				break;
 			}
 		}
 		return L_EXIT_GAME;
@@ -2442,7 +2467,7 @@ public class Adv32 extends Wizard
 	private void init()
 	{
 		loadDataFile();
-		linkdata();
+		completeLoad();
 		if(db_dump_travel)
 		{
 			dump_travel();
@@ -2452,10 +2477,7 @@ public class Adv32 extends Wizard
 		poof();
 	}
 	// ---------------------------------------------------------------------
-	private void linkdata()	//   secondary data manipulation 
-	{       
-		int i,j;
-		// array linkages          
+	private void completeLoad() {
 		for (int loc=1; loc<=LAST_LOCATION_INDEX; loc++)
 		{
 			NavConfig navConfig = navConfigs.get(loc);
@@ -2467,33 +2489,7 @@ public class Adv32 extends Wizard
 				}
 			}
 		}
-		for (j=LAST_OBJECT_INDEX; j>0; j--)
-		{
-			if (fixd[j]>0)
-			{       
-				drop(j+FIXED_OBJECT_OFFSET,fixd[j]);
-				drop(j,plac[j]);
-			}
-		}
-		for (j=LAST_OBJECT_INDEX; j>0; j--)
-		{
-			gameData.fixed[j]=fixd[j];
-			if (plac[j]!=0 && fixd[j]<=0)
-				drop(j,plac[j]);
-		}
-		gameData.tally = 0;
-		gameData.tally2 = 0;
-	
-		for (i=FIRST_TREASURE_INDEX; i<=LAST_TREASURE_INDEX; i++)
-		{       
-			if ( hasPText(i) ) 
-			{
-				gameData.prop[i] = -1;
-			}
-			gameData.tally = gameData.tally - gameData.prop[i];
-		}
-	
-		//  define mnemonics 
+		//  define mnemonics
 		keys = vocab("keys", Usage.OBJECT);
 		lamp = vocab("lamp", Usage.OBJECT);
 		grate = vocab("grate", Usage.OBJECT);
@@ -2556,7 +2552,40 @@ public class Adv32 extends Wizard
 		vthrow = vocab("throw", Usage.VERB);
 		find = vocab("find", Usage.VERB);
 		invent = vocab("inven", Usage.VERB);
+	}
+
+	// ---------------------------------------------------------------------
+	private void initializeGameData()	//   secondary data manipulation
+	{       
+		int i,j;
+		// array linkages          
+		for (j=LAST_OBJECT_INDEX; j>0; j--)
+		{
+			if (fixd[j]>0)
+			{       
+				drop(j+FIXED_OBJECT_OFFSET,fixd[j]);
+				drop(j,plac[j]);
+			}
+		}
+		for (j=LAST_OBJECT_INDEX; j>0; j--)
+		{
+			gameData.fixed[j]=fixd[j];
+			if (plac[j]!=0 && fixd[j]<=0)
+				drop(j,plac[j]);
+		}
+		gameData.tally = 0;
+		gameData.tally2 = 0;
 	
+		for (i=FIRST_TREASURE_INDEX; i<=LAST_TREASURE_INDEX; i++)
+		{       
+			if ( hasPText(i) ) 
+			{
+				gameData.prop[i] = -1;
+			}
+			gameData.tally = gameData.tally - gameData.prop[i];
+		}
+	
+
 		//  initialize dwarves 
 		gameData.chloc = 114;
 		gameData.chloc2 = 140;
