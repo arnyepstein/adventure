@@ -123,14 +123,8 @@
 		setInputElText(curText)
 	}
 	// -----------------------------------------------------------------
-	var sendCommand = function(message) {
-		if(message == null) {
-			clearScreen();
-		} else {
-			showInputLine(message);
-		}
-
-		var body = { command: message==null ? "new" : "move", message: message };
+	var sendCommand = function(command, message) {
+		var body = { command: command, message: message, player: screenName };
 
 		$ae.doRequest({
 			method: "POST",
@@ -214,6 +208,12 @@
 					appendLineEl(newLineEl("gameText", '&nbsp;&nbsp;&nbsp;<button name="' + key + '">I am ' + key + '</button>'))
 				}
 			);
+			consoleEl.find("button").click(
+				function(event) {
+					screenName = event.currentTarget.name;
+					setMode(GameMode);
+				}
+			)
 			if(namecount > 0) {
 				showGameLine('&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;or')
 			}
@@ -271,14 +271,15 @@
 				currentPlayer = localInfo.users[screenName]
 			}
 			// Start the game
-			sendCommand(null);
+			sendCommand("new", null);
 		},
 
 		onPlayButton: function(event) {
 		},
 
 		onCommandEntered: function(command) {
-			sendCommand(command);
+			showInputLine(command);
+			sendCommand("move", command);
 			curText = "";
 			setInputElText(command)
 		},

@@ -20,7 +20,6 @@ public class GameMgr  {
 	public static class UserInfo {
 		String screenName;
 		Object savedGame;
-		String activeGame;
 		public UserInfo(String screenName) {
 			this.screenName = screenName;
 		}
@@ -35,6 +34,18 @@ public class GameMgr  {
 		}
 		userDb.put(screenName, new UserInfo(screenName));
 		return true;
+	}
+
+	synchronized public Adv32 findGame(String screenName) {
+		return activeGames.get(screenName);
+	}
+
+	synchronized public void setActiveGame(String screenName, Adv32 game) {
+		activeGames.put(screenName, game);
+	}
+
+	synchronized public void endActiveGame(String screenName) {
+		 activeGames.remove(screenName);
 	}
 
 }

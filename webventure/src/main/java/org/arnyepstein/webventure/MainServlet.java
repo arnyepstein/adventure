@@ -128,6 +128,7 @@ public class MainServlet extends HttpServlet {
 	private static class GameInputRequest {
 		public String message;
 		public String command;
+		public String player;
 	}
 	// ---------------------------------------------------------------------
 	private static class GameInputResponse {
@@ -137,14 +138,14 @@ public class MainServlet extends HttpServlet {
 	private void doMove(HttpServletRequest req, HttpServletResponse resp) throws IOException {
 		GameInputRequest body = gson.fromJson(req.getReader(), GameInputRequest.class);
 		HttpSession session = req.getSession();
-		Adv32 game = (Adv32) session.getAttribute("adventureGame");
+		Adv32 game = gameMgr.findGame(body.player);
 		Adv32.CrankOutput result = null;
 		GameInputResponse answer = null;
 		answer = new GameInputResponse();
 		try {
 			if(game == null || "new".equals(body.command)) {
 				game = new Adv32();
-				session.setAttribute("adventureGame", game);
+				gameMgr.setActiveGame(body.player, game);
 				result = game.startGame();
 			} else {
 				result = game.nextMove(body.message);
@@ -158,7 +159,7 @@ public class MainServlet extends HttpServlet {
 			} else {
 				answer.data.add("Game Over");
 			}
-			session.setAttribute("adventureGame", null);
+			gameMgr.endActiveGame(body.player);
 		}
 		gson.toJson(answer, resp.getWriter());
 	}
