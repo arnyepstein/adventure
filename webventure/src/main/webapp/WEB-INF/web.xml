@@ -38,8 +38,7 @@
 
 	<servlet-mapping>
 		<servlet-name>dispatchServlet</servlet-name>
-		<!--<url-pattern>/</url-pattern>-->
-		<url-pattern>/api/*</url-pattern>
+		<url-pattern>/game/*</url-pattern>
 	</servlet-mapping>
 
 </web-app>

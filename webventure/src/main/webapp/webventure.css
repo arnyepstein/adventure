@@ -1,0 +1,48 @@
+
+p {
+    font-family: "Lucida Console", Monaco, monospace;
+    font-size: 14pt;
+}
+
+p.userInput {
+    margin-bottom: 4px;
+}
+.userInput {
+    color: darkgreen;
+    height:22px;
+}
+.gameText {
+    color: green;
+    height:22px;
+}
+.game-container {
+    width: 900px;
+}
+
+.game-container div {
+}
+
+.console-container {
+    border-radius: 80px;
+    width: 100%;
+    border: 1px solid black;
+    padding:25px;
+    background-color: black;
+    /*background-color: darkgreen;*/
+}
+
+.console {
+    height: 600px;
+    overflow-y: hidden;
+    width: 100%;
+    opaque:0;
+}
+
+.console p {
+    padding: 0;
+    margin: 0;
+}
+
+.buttonPanel {
+    text-align: center;
+}

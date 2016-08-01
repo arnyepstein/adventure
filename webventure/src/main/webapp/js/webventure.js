@@ -6,31 +6,7 @@
 	var ROOT_URL = window.location.pathname;
 	ROOT_URL = ROOT_URL.substring(0, ROOT_URL.lastIndexOf('/'));
 	var ECHO_URL = ROOT_URL + "/api/echo";
-	// -----------------------------------------------------------------
-	var execRequest = function (method, url, data, onSuccess, onFailure) {
-		return $ae.doRequest({
-			ctx:APP,
-			url: url,
-			data: data,
-			type: method,
-			success: $ae.emptyFunc,
-			onSuccess: onSuccess,
-			onFailFunc: onFailure | APP.showRequestError
-		});
-	}
-	// -----------------------------------------------------------------
-	var getRequest = function (url, onSuccess, onFailure) {
-		return execRequest("GET", url, null, onSuccess, onFailure);
-	}
-	// -----------------------------------------------------------------
-	var postRequest = function (url, data, onSuccess, onFailure) {
-		return execRequest("POST", url, data, onSuccess, onFailure);
-	}
-	// -----------------------------------------------------------------
-	var deleteRequest = function (url, onSuccess, onFailure) {
-		return execRequest("DELETE", url, null, onSuccess, onFailure);
-	}
-
+	var INPUT_URL = ROOT_URL + "/game/input";
 	// -----------------------------------------------------------------
 	APP.buildErrorMessage = function(resp){
 		var info = resp.responseJSON;
@@ -65,6 +41,7 @@
 
 
 	// -----------------------------------------------------------------
+	var gameContainerEl = null;
 	var consoleEl = null;
 	var inputEl = null;
 	// -----------------------------------------------------------------
@@ -72,13 +49,27 @@
 		return $('<p class="' + elclass + '">' + message + "</p>");
 	}
 	// -----------------------------------------------------------------
-	var showLine = function(elclass, message) {
-		if(message == null)
-			return;
-		inputEl.before(newLineEl(elclass, message));
+	var appendLineEl = function(el) {
+		inputEl.before(el);
 		var contentHeight = consoleEl[0].scrollHeight;
 		var ctlHeight = consoleEl.outerHeight();
 		consoleEl.scrollTop(contentHeight - ctlHeight);
+	}
+	// -----------------------------------------------------------------
+	var showLine = function(elclass, message) {
+		if(message != null) {
+			appendLineEl(newLineEl(elclass, message))
+		}
+	}
+	// -----------------------------------------------------------------
+	var showGameLine = function(message) {
+		if(message != null) {
+			appendLineEl(newLineEl("gameText", message))
+		}
+	}
+
+	var showInputLine = function(message) {
+		appendLineEl(newLineEl("userInput", message))
 	}
 	// -----------------------------------------------------------------
 	var clearScreen = function() {
@@ -88,7 +79,6 @@
 	}
 	// -----------------------------------------------------------------
 	var curText = "";
-
 	var cursor = "_";
 	// -----------------------------------------------------------------
 	var setInputElText = function(text) {
@@ -96,20 +86,24 @@
 
 	}
 	// -----------------------------------------------------------------
-	var onBlink = function() {
-		cursor = (cursor == "_") ? " " : "_";
-		setInputElText(curText)
+	var onTimerEvent = function() {
+		if(mode && mode.onTimerEvent) {
+			mode.onTimerEvent()
+		}
 	}
 	// -----------------------------------------------------------------
 	var onKey = function(event) {
+		if(! mode.onCommandEntered) {
+			return;
+		}
 		var code = event.keyCode;
 		if( event.metaKey || event.ctrlKey || event.altKey ) {
 			return;
 		}
 		if(code == 13) {
-			sendCommand(curText);
-			curText = "";
-			setInputElText(curText)
+			if(mode.onCommandEntered) {
+				mode.onCommandEntered(curText)
+			}
 			return;
 		}
 		var len = curText.length;
@@ -133,20 +127,20 @@
 		if(message == null) {
 			clearScreen();
 		} else {
-			showLine("userInput", message);
+			showInputLine(message);
 		}
 
 		var body = { command: message==null ? "new" : "move", message: message };
 
 		$ae.doRequest({
 			method: "POST",
-			url: ECHO_URL,
+			url: INPUT_URL,
 			data: JSON.stringify(body),
 			onSuccess: function(resp) {
 				_.each(
 					resp.data,
 					function(msg) {
-						showLine("gameText", msg);
+						showGameLine(msg);
 
 						// log(msg);
 					}
@@ -155,17 +149,162 @@
 		});
 	}
 	// -----------------------------------------------------------------
-	$ae.appMain(function() {
-		consoleEl = $("#console");
-		clearScreen();
-	});
+	var onPlayButton = function(event) {
+		event.preventDefault();
+		event.stopPropagation();
+		if(mode == "welcome") {
+			setMode("game");
+		} else {
+		}
+	}
+	// -----------------------------------------------------------------
+	var mode = "";
+	var screenName = ""
+	var localInfo = null;
+	var currentPlayer = null;
+	// -----------------------------------------------------------------
+	var setMode = function(newMode) {
+		// $ae.showOptional($("#mainContainer"), newMode);
+		if(mode == newMode) return;
+		if(mode.onEndMode) {
+			mode.onEndMode();
+		}
+		mode = newMode;
+		if(mode.onBeginMode) {
+			mode.onBeginMode();
+		}
+		// if(mode == "welcome") {
+		// 	clearScreen();
+		// 	inputEl.text("");
+		// 	showGameLine("Welcome to WebVenture - an online version of Colossal Cave Adventure")
+		// 	showGameLine('Enter your Screen Name: ')
+		// 	var screenForm = $('<form><input type="input" name="screenname" /></form>')
+		// 	appendLineEl(screenForm)
+		// 	screenForm.submit(onPlayButton);
+		// }
+		// if(mode == "game") {
+		// 	clearScreen();
+		// 	// Start the game
+		// 	sendCommand(null);
+		// }
+	}
+	// -----------------------------------------------------------------
+	var updateInfo = function() {
+		$ae.Local.setJson("adventure", localInfo)
+	}
+	// -----------------------------------------------------------------
+	var WelcomeMode = {
+		onBeginMode: function() {
+			clearScreen();
+			inputEl.text("");
+			localInfo = $ae.Local.getJson("adventure")
+			if(!localInfo) {
+				localInfo =  { users:{} };
+				updateInfo();
+			}
+			showGameLine("Welcome to WebVenture - an online version of Colossal Cave Adventure")
+			var namecount = 0
+			_.each(
+				localInfo.users,
+				function(val, key) {
+					if(namecount == 0) {
+						showGameLine("Select your Screen Name");
+						namecount++;
+					}
+					appendLineEl(newLineEl("gameText", '&nbsp;&nbsp;&nbsp;<button name="' + key + '">I am ' + key + '</button>'))
+				}
+			);
+			if(namecount > 0) {
+				showGameLine('&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;or')
+			}
+			showGameLine('Enter your Screen Name: ')
+			// var screenForm = $('<form><input type="input" name="screenname" /></form>')
+			// appendLineEl(screenForm)
+			// screenForm.submit(onPlayButton);
 
+			$ae.hide($("#newGame"))
+		},
+
+		onCommandEntered: function(command) {
+			// process Screen Name
+			screenName = command;
+			curText = "";
+			showInputLine(command);
+			var body = {
+				name: screenName
+			}
+			$ae.doRequest({
+				method: "POST",
+				url: ROOT_URL + "/game/user",
+				data: JSON.stringify(body),
+				onSuccess: function(resp) {
+					if( "Added" == resp.status) {
+						setMode(GameMode);
+					} else {
+						showGameLine('Sorry, that name is in use.  Try another name: ')
+					}
+				}
+			});
+		},
+
+		onPlayButton: function(event) {
+			setMode(GameMode);
+		},
+
+		onTimerEvent: function() {
+			cursor = (cursor == "_") ? " " : "_";
+			setInputElText(curText)
+		}
+
+
+	};
+
+	// -----------------------------------------------------------------
+	var GameMode = {
+		onBeginMode: function() {
+			clearScreen();
+			if( ! localInfo.users[screenName] ) {
+				currentPlayer = { name: screenName }
+				localInfo.users[screenName] = currentPlayer;
+				updateInfo();
+			} else {
+				currentPlayer = localInfo.users[screenName]
+			}
+			// Start the game
+			sendCommand(null);
+		},
+
+		onPlayButton: function(event) {
+		},
+
+		onCommandEntered: function(command) {
+			sendCommand(command);
+			curText = "";
+			setInputElText(command)
+		},
+
+		onTimerEvent: function() {
+			cursor = (cursor == "_") ? " " : "_";
+			setInputElText(curText)
+		}
+	}
+
+	// -----------------------------------------------------------------
+	$ae.appMain(function() {
+		gameContainerEl = $(".game-container");
+		consoleEl = gameContainerEl.find(".console");
+		setMode(WelcomeMode);
+		// clearScreen();
+	});
+	// -----------------------------------------------------------------
 	$ae.onAppLoaded(function() {
 
 		$( "#newGame" ).click(function( event ) {
 			event.preventDefault();
 			event.stopPropagation();
-			sendCommand(null);
+			if(mode.onPlayButton) {
+				mode.onPlayButton(event);
+			}
 		});
 
 		// $("#message").keypress(
@@ -194,7 +333,7 @@
 			}
 		);
 
-		window.setInterval(onBlink, 600);
+		window.setInterval(onTimerEvent, 600);
 
 	});
 

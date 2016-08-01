@@ -3,7 +3,10 @@
 	var THIS = {};
 
 	// -----------------------------------------------------------------
-	var emptyFunc =  function () {}
+	var emptyFunc =
+		function () {
+
+		}
 
 
 	// This function runs when the page is "ready" according to JQuery
@@ -85,20 +88,65 @@
 		$(el).removeClass("hidden");
 	};
 	// -----------------------------------------------------------------
+	THIS.showOptional = function(parentEl, modeKey) {
+		$(parentEl).find("div[AE_optional]").each(
+			function() {
+				var div = $(this);
+				var keys = div.attr("AE_optional").split(",");
+				if($.inArray(modeKey, keys) >= 0) {
+					THIS.show(div);
+				} else {
+					THIS.hide(div);
+				}
+			}
+		)
+	}
+	// -----------------------------------------------------------------
 	THIS.getFormData = function (el) {
 		var values = el.serializeArray();
-		var o = {};
-		$.each(values, function () {
-			if (o[this.name]) {
-				if (!o[this.name].push) {
-					o[this.name] = [o[this.name]];
+		var result = {};
+		$.each(
+			values,
+			function () {
+				var obj = result;
+				var name = this.name;
+				var value = this.value || '';
+				var right = name;
+				while(true) {
+					var dotix = right.indexOf(".");
+					if(dotix != -1 ) {
+						name = right.substring(0, dotix);
+						right = right.substring(dotix + 1);
+					} else {
+						name = right;
+						right = null;
+					}
+					var bkix = name.indexOf("[");
+					var subsc = -1;
+					if(bkix != -1) {
+						// If the name has a subscript,
+						subsc = 0 + name.substring(bkix+1, name.length-1);
+						name = name.substring(0, bkix);
+						if(right) {
+							var array = obj[name] || (obj[name] = []);
+							obj = (array[subsc] = {});
+						} else {
+							obj[subsc] = value;
+							break;
+						}
+					} else {
+						if(right) {
+							var newobj = obj[name] || {};
+							obj = obj[name] = newobj;
+						} else {
+							obj[name] = value;
+							break;
+						}
+					}
 				}
-				o[this.name].push(this.value || '');
-			} else {
-				o[this.name] = this.value || '';
 			}
-		});
-		return o;
+		);
+		return result;
 	};
 	// -----------------------------------------------------------------
 	THIS.defaultRequestError = emptyFunc;
@@ -120,7 +168,7 @@
 	//  onSuccess  - called when a 2xx is received and the resp.status is "success"
 	//  onFailure - called on HTTP error or resp.status of "failure"
 	var doRequest = THIS.doRequest = function(options) {
-		var onFailFunc = options.onFailure || $ae.defaultRequestError;
+		var onFailure = options.onFailure || $ae.defaultRequestError;
 		var onSuccess = options.onSuccess || $ae.emptyFunc;
 		var ctx = options.ctx || callbackCtx;
 		var promise =
@@ -137,9 +185,9 @@
 				onSuccess.call(ctx, resp);
 			}
 		);
-		if(onFailFunc) {
+		if(onFailure) {
 			promise.fail(function(resp) {
-				onFailFunc.call(ctx, resp);
+				onFailure.call(ctx, resp.responseText);
 			});
 		}
 		return promise;
@@ -150,7 +198,7 @@
 		var form = $ae.getSelector(formSel);
 		var method = options.method ? options.method : "POST";
 		var okfunc = options.onSuccess ? options.onSuccess : function(resp){alert("Form Success: " + formSel)};
-		var failfunc = options.onFailFunc ? options.onFailFunc : $ae.showFailure;
+		var onFailure = options.onFailure ? options.onFailure : APP.showFailure;
 		var datafunc = options.datafunc;
 
 		form.submit(
@@ -167,7 +215,7 @@
 					method: method,
 					url: url,
 					data: jdata,
-					onFailFunc: failfunc,
+					onFailure: onFailure,
 					onSuccess: okfunc
 				};
 				if(ctx) reqOpts.ctx = ctx;

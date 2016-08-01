@@ -25,68 +25,127 @@ public class MainServlet extends HttpServlet {
 
 	private static final Logger log = Logger.getLogger(MainServlet.class);
 
+	private GameMgr gameMgr = new GameMgr();
+
 	@Override
 	public void init(ServletConfig config) throws ServletException {
 		super.init(config);
 	}
 
+	private final static String INFO_KEY = "REST_INFO";
+
+	private static class RestInfo {
+		String uri;
+		String contextPath;
+		String info;
+		String[] parts;
+		String apiGroup;
+		String apiInfo;
+	}
 	//	public final static String AUTHENTICATION_CONTEXT_KEY = "AUTHENTICATION_CONTEXT";
 	@Override
 	protected void service(HttpServletRequest req, HttpServletResponse resp)
 		throws IOException, ServletException
 	{
-//		String uri = req.getRequestURI();
-//		String contextPath = req.getContextPath();
-//		String info = uri.substring(contextPath.length()+1);
-//		if("".equals(info)) {
-//			resp.sendRedirect(contextPath + "/index.xhtml");
-//			return;
-//		} else if("echo".equals(info)) {
-//			doEcho(req, resp);
+		RestInfo restInfo = new RestInfo();
+
+		restInfo.uri = req.getRequestURI();
+		restInfo.contextPath = req.getContextPath();
+		restInfo.info = restInfo.uri.substring(restInfo.contextPath.length()+1);
+		String[] parts = restInfo.info.split("/", 2);
+		restInfo.apiGroup = parts[0];
+		if(parts.length > 1) {
+			restInfo.apiInfo = parts[1];
+			restInfo.parts = parts[1].split("/");
+		} else {
+			restInfo.apiInfo = "";
+		}
+		if("game".equals(restInfo.apiGroup)) {
+			doGameApi(req, resp, restInfo);
+		} else {
+			resp.setStatus(HttpServletResponse.SC_NOT_FOUND);
+		}
+	}
+
+	private RestInfo getRestInfo(HttpServletRequest req) {
+		return (RestInfo) req.getAttribute(INFO_KEY);
+	}
+
+//	public void doNoApi(HttpServletRequest req, HttpServletResponse resp, RestInfo restInfo)
+//		throws IOException {
+//		if(req.getMethod().equals("GET") && "".equals(restInfo.info)) {
+//			resp.sendRedirect(restInfo.contextPath + "/index.html");
 //		} else {
 //			resp.setStatus(HttpServletResponse.SC_NOT_FOUND);
 //		}
-		super.service(req, resp);
+//	}
 
+	private boolean isPost(HttpServletRequest req) {
+		return "POST".equals(req.getMethod());
+	}
+	private boolean isGet(HttpServletRequest req) {
+		return "GET".equals(req.getMethod());
 	}
 
-	@Override
-	public void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException {
-		String uri = req.getRequestURI();
-		String contextPath = req.getContextPath();
-		String info = uri.substring(contextPath.length()+1);
-		if("".equals(info)) {
-			resp.sendRedirect(contextPath + "/index.xhtml");
-		} else {
-			resp.setStatus(HttpServletResponse.SC_NOT_FOUND);
-		}
+	// Supported URI's
+	// game/input (POST): UI providing line of user input
+	// game/user (POST): Request to create a new screen name
 
-	}
 
-	@Override
-	public void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException {
-		String uri = req.getRequestURI();
-		String contextPath = req.getContextPath();
-		String info = uri.substring(contextPath.length()+1);
-		if("api/echo".equals(info)) {
+	public void doGameApi(HttpServletRequest req, HttpServletResponse resp, RestInfo restInfo)
+		throws IOException
+	{
+		if(isPost(req) && "input".equals(restInfo.apiInfo)) {
 			doMove(req, resp);
+		} else 	if(isPost(req) && "user".equals(restInfo.apiInfo)) {
+			addUser(req, resp, restInfo);
 		} else {
 			resp.setStatus(HttpServletResponse.SC_NOT_FOUND);
 		}
 	}
 
+	// ---------------------------------------------------------------------
+	private static class AddUserRequest {
+		public String name;
+	}
+	// ---------------------------------------------------------------------
+	private static class AddUserResponse {
+		String status;
+	}
+	// ---------------------------------------------------------------------
+	private void addUser(HttpServletRequest req, HttpServletResponse resp, RestInfo restInfo)
+		throws IOException
+	{
+		AddUserResponse response = new AddUserResponse();
+		AddUserRequest body = gson.fromJson(req.getReader(), AddUserRequest.class);
+		boolean success = gameMgr.addScreenName(body.name);
+		response.status = success ? "Added" : "InUse";
+		gson.toJson(response, resp.getWriter());
+	}
+
+
+	// ---------------------------------------------------------------------
+	private static class GameInputRequest {
+		public String message;
+		public String command;
+	}
+	// ---------------------------------------------------------------------
+	private static class GameInputResponse {
+		public List<String> data = new ArrayList<>();
+	}
+	// ---------------------------------------------------------------------
 	private void doMove(HttpServletRequest req, HttpServletResponse resp) throws IOException {
-		EchoRequest body = gson.fromJson(req.getReader(), EchoRequest.class);
+		GameInputRequest body = gson.fromJson(req.getReader(), GameInputRequest.class);
 		HttpSession session = req.getSession();
 		Adv32 game = (Adv32) session.getAttribute("adventureGame");
 		Adv32.CrankOutput result = null;
-		EchoResponse answer = null;
-		answer = new EchoResponse();
+		GameInputResponse answer = null;
+		answer = new GameInputResponse();
 		try {
 			if(game == null || "new".equals(body.command)) {
 				game = new Adv32();
 				session.setAttribute("adventureGame", game);
-				result = game.startGame(null);
+				result = game.startGame();
 			} else {
 				result = game.nextMove(body.message);
 			}
@@ -104,22 +163,6 @@ public class MainServlet extends HttpServlet {
 		gson.toJson(answer, resp.getWriter());
 	}
 
-	private void doEcho(HttpServletRequest req, HttpServletResponse resp) throws IOException {
-		EchoRequest body = gson.fromJson(req.getReader(), EchoRequest.class);
-		EchoResponse answer = new EchoResponse();
-		answer.data.add("Request was:");
-		answer.data.add(body.message);
-		gson.toJson(answer, resp.getWriter());
-
-	}
-
-	private static class EchoRequest {
-		public String message;
-		public String command;
-	}
-	private static class EchoResponse {
-		public List<String> data = new ArrayList<>();
-	}
 
 	public static void sendRedirect(HttpServletResponse resp, String location) {
 		try {
